@@ -7,10 +7,13 @@
 # WARNING! All changes made in this file will be lost!
 import json
 import os
+import filetype
+import time
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+from PyQt5.QtWebEngineWidgets import *
 
 from UI.PyQt_Thread import FileListThread, FilePasteThread
 from UI.about import AboutDialog
@@ -35,7 +38,7 @@ class Ui_MainWindow(object):
         :return:
         '''
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1000, 800)
+        MainWindow.resize(1500, 900)
         self.centralwidget = QWidget(MainWindow)
         sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -77,7 +80,7 @@ class Ui_MainWindow(object):
         self.file_tree.setHeaderHidden(True)
         self.file_tree.setColumnHidden(1, True)
         self.file_tree.setSortingEnabled(True)
-        self.file_tree.setFont(QFont("Roman times",12,QFont.Light))
+        self.file_tree.setFont(QFont("Roman times", 12, QFont.Light))
 
         # 文件树第一个节点
         self.root = QTreeWidgetItem(self.file_tree)
@@ -89,17 +92,47 @@ class Ui_MainWindow(object):
         self.file_thread.start()
         self.file_thread.sinOut.connect(self.get_tree_root)
 
-        '''
-        左侧文件管理区生成部分
-        '''
-        self.table_view = QTableView(self.splitter)
+        self.tabWidget = QTabWidget(self.splitter)
         sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(1)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.table_view.sizePolicy().hasHeightForWidth())
+        sizePolicy.setVerticalStretch(1)
+        sizePolicy.setHeightForWidth(self.tabWidget.sizePolicy().hasHeightForWidth())
+        self.tabWidget.setSizePolicy(sizePolicy)
+        self.tabWidget.setObjectName("tabWidget")
 
-        self.table_view.setSizePolicy(sizePolicy)
-        self.table_view.setObjectName("table_view")
+        '''文件管理'''
+        self.managet_tab = QWidget()
+        self.managet_tab.setObjectName("managet_tab")
+        self.verticalLayout = QVBoxLayout(self.managet_tab)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.tableView = QTableView(self.managet_tab)
+        self.tableView.setMinimumSize(QSize(0, 299))
+        self.tableView.setLineWidth(10)
+        self.tableView.setShowGrid(True)
+        self.tableView.setObjectName("tableView")
+        self.verticalLayout.addWidget(self.tableView)
+        self.managet_tab.setContentsMargins(10,10,10,10)
+        self.tabWidget.addTab(self.managet_tab, "文件管理")
+
+        '''文件属性'''
+        self.property_tab = QWidget()
+        self.property_tab.setObjectName("property_tab")
+        self.label = QLabel(self.property_tab)
+        self.label.setGeometry(QRect(160, 90, 351, 361))
+        self.label.setObjectName("label")
+        self.tabWidget.addTab(self.property_tab, "文件属性")
+
+        '''文件预览'''
+        self.preview_tab = QWidget()
+        self.preview_tab.setObjectName('preview_tab')
+        self.tab_layout = QVBoxLayout(self.preview_tab)
+        self.browser = QWebEngineView(self.preview_tab)
+        self.browser.setMinimumSize(QSize(200, 400))
+        welcome_html = 'C:/Users/15735657423/Desktop/graduation-project/UI/welcome.html'
+        self.browser.load(QUrl(welcome_html))
+        self.tab_layout.addWidget(self.browser)
+        self.tabWidget.addTab(self.preview_tab, '文件预览')
+
         self.horizontalLayout.addWidget(self.splitter)
         self.horizontalLayout_2.addLayout(self.horizontalLayout)
         MainWindow.setCentralWidget(self.centralwidget)
@@ -225,10 +258,12 @@ class Ui_MainWindow(object):
     def file_item_double_clicked(self):
         item = self.file_tree.currentItem()
         file_path = item.text(1)
+        file_path = file_path.replace('\\', '/')
+        print(file_path)
         if os.path.isdir(file_path):
-            pass
-        else:
-            pass
+            self.add_table_item(file_path)
+        elif file_path.endswith('.html'):
+            self.browser.load(QUrl(file_path))
 
     def add_menubar(self):
         '''
@@ -288,9 +323,8 @@ class Ui_MainWindow(object):
         '''
         local_path = self.settings['FILE_LOCATION']
         if '/' in local_path:
-            local_path = local_path.replace('/','\\')
+            local_path = local_path.replace('/', '\\')
         os.system("explorer.exe %s" % os.path.dirname(local_path))
-
 
     def space_usage(self):
         local_path = self.settings['FILE_LOCATION']
@@ -299,18 +333,84 @@ class Ui_MainWindow(object):
         file_size = os.path.getsize(local_path)
         print(file_size)
         if file_size <= 1024:
-            file_size = str(round(file_size,2)) + "K"
+            file_size = str(round(file_size, 2)) + "K"
         elif file_size > 1024 and file_size <= 1048576:
-            file_size = str(round(file_size/1024,2)) + 'M'
+            file_size = str(round(file_size / 1024, 2)) + 'M'
         else:
-            file_size = str(round(file_size/(1024*1024),2)) + 'G'
+            file_size = str(round(file_size / (1024 * 1024), 2)) + 'G'
 
-        QMessageBox.about(self.mainwindow,'占用空间',local_path+'：'+file_size)
+        QMessageBox.about(self.mainwindow, '占用空间', local_path + '：' + file_size)
+
+    def add_table_item(self,file_path):
+        self.model = QStandardItemModel()
+        self.model.setHorizontalHeaderLabels(['状态','文件名','文件大小','文件类型','创建时间'])
+
+        '''添加列表选项部分'''
+        file_list = os.listdir(file_path)
+        for index in range(len(file_list)):
+            child_path = os.path.join(file_path,file_list[index])
+            child_stat = os.stat(child_path)
+            child_ctime = child_stat.st_ctime
+            '''文件创建时间'''
+            child_ctime = time.strftime('%Y.%m.%d %H:%M:%S',time.localtime(child_ctime))
+            if os.path.isdir(child_path):
+                child_type = 'folder'
+                child_size = self.getdirsize(child_path)
+            else:
+                kind = filetype.guess(child_path)
+                if kind is None:
+                    child_type = 'other'
+                else:
+                    child_type = kind.extension
+                child_size = os.path.getsize(child_path)
 
 
+            '''child_size 单位换算'''
+            child_size = self.approximate_size(child_size)
+
+            '''列表项复选框部分'''
+            item_checked = QStandardItem()
+            item_checked.setCheckState(Qt.Checked)
+            item_checked.setCheckable(False)
+            child_column = [item_checked,file_list[index],child_size,child_type,child_ctime]
+
+            '''循环添加列表项'''
+            for column_index in range(5):
+                item = QStandardItem(child_column[column_index])
+                self.model.setItem(index,column_index,item)
+        self.tableView.setModel(self.model)
+        self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tableView.horizontalHeader().setSectionResizeMode(0, QHeaderView.Interactive)
+        self.tableView.setColumnWidth(0,80)
+        self.tableView.verticalHeader().setVisible(False)
+        self.tableView.setShowGrid(False)
+        # self.tableView.setRootIndex(QModelIndex(self.model.index(file_path)))
+
+    def getdirsize(slef,dir):
+        size = 0
+        for root, dirs, files in os.walk(dir):
+            size += sum([os.path.getsize(os.path.join(root, name)) for name in files])
+        return size
 
 
+    def approximate_size(self,size, a_kilobyte_is_1024_bytes=True):
+        '''Convert a file size to human-readable form.
 
+        Keyword arguments:
+        size -- file size in bytes
+        a_kilobyte_is_1024_bytes -- if True (default), use multiples of 1024
+                                    if False, use multiples of 1000
 
+        Returns: string
 
+        '''
+        SUFFIXES = {1024: ['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
+                    1000: ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']}
 
+        if size < 0:
+            raise ValueError('number must be non-negative')
+        multiple = 1024 if a_kilobyte_is_1024_bytes else 1000
+        for suffix in SUFFIXES[multiple]:
+            size /= multiple
+            if size < multiple:
+                return '{0:.1f} {1}'.format(size, suffix)

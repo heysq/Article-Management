@@ -72,3 +72,4 @@ class FilePasteThread(QThread):
             with open(des_absurl,'wb') as fd:
                 fd.write(fs.read())
         self.sinOut.emit(des_filename)
+
