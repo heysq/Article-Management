@@ -28,26 +28,26 @@ class FileListThread(QThread):
                 child = QTreeWidgetItem(key)
                 child.setText(0, file)
                 child.setText(1, file_path)
-                child.setIcon(0,QIcon('UI/images/folder.png'))
+                child.setIcon(0,QIcon('images/folder.png'))
                 self.file_list(child, file_path)
             else:
                 child = QTreeWidgetItem(key)
                 child.setText(0, file)
                 child.setText(1, file_path)
                 if file.endswith('.jpg'):
-                    child.setIcon(0,QIcon('UI/images/jpg.png'))
+                    child.setIcon(0,QIcon('images/jpg.png'))
                 elif file.endswith('.png'):
-                    child.setIcon(0, QIcon('UI/images/png.png'))
+                    child.setIcon(0, QIcon('images/png.png'))
                 elif file.endswith('.zip'):
-                    child.setIcon(0, QIcon('UI/images/zip.png'))
+                    child.setIcon(0, QIcon('images/zip.png'))
                 elif file.endswith('.css'):
-                    child.setIcon(0, QIcon('UI/images/css.png'))
+                    child.setIcon(0, QIcon('images/css.png'))
                 elif file.endswith(('.html','.htm')):
-                    child.setIcon(0,QIcon('UI/images/html.png'))
+                    child.setIcon(0,QIcon('images/html.png'))
                 elif file.endswith('.txt'):
-                    child.setIcon(0,QIcon('UI/images/txt.png'))
+                    child.setIcon(0,QIcon('images/txt.png'))
                 else:
-                    child.setIcon(0,QIcon('UI/images/file.png'))
+                    child.setIcon(0,QIcon('images/file.png'))
 
 
 

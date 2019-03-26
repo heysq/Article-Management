@@ -27,9 +27,11 @@ class Ui_MainWindow(object):
         :param parent:
         '''
         super().__init__()
-        f_settings = open('settings.json', 'r')
+        f_settings = open('../settings.json', 'r')
         self.settings = json.load(f_settings)
         self.mainwindow = mainwindow
+
+    '''软件主界面UI设置方法'''
 
     def setupUi(self, MainWindow):
         '''
@@ -84,13 +86,14 @@ class Ui_MainWindow(object):
 
         # 文件树第一个节点
         self.root = QTreeWidgetItem(self.file_tree)
-        self.root.setText(0, self.settings['FILE_LOCATION'].split('\\')[-1])
+        self.settings['FILE_LOCATION'] = self.settings['FILE_LOCATION'].replace('\\', '/')
+        self.root.setText(0, self.settings['FILE_LOCATION'].split('/')[-1])
         self.root.setText(1, self.settings['FILE_LOCATION'])
         self.root.setIcon(0, QIcon('UI/images/folder.png'))
         # 启用文件树构造线程
         self.file_thread = FileListThread(self.root, self.settings['FILE_LOCATION'])
         self.file_thread.start()
-        self.file_thread.sinOut.connect(self.get_tree_root)
+        self.file_thread.sinOut.connect(self.getTreeRoot)
 
         self.tabWidget = QTabWidget(self.splitter)
         sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -111,7 +114,7 @@ class Ui_MainWindow(object):
         self.tableView.setShowGrid(True)
         self.tableView.setObjectName("tableView")
         self.verticalLayout.addWidget(self.tableView)
-        self.managet_tab.setContentsMargins(10,10,10,10)
+        self.managet_tab.setContentsMargins(10, 10, 10, 10)
         self.tabWidget.addTab(self.managet_tab, "文件管理")
 
         '''文件属性'''
@@ -156,10 +159,10 @@ class Ui_MainWindow(object):
         env_set = QAction('环境设置', self.mainwindow)
         help.addAction(env_set)
 
-        about.triggered.connect(self.show_about_window)
-        env_set.triggered.connect(self.show_env_window)
-        local_file.triggered.connect(self.open_local_file)
-        used_space.triggered.connect(self.space_usage)
+        about.triggered.connect(self.showAboutWindow)
+        env_set.triggered.connect(self.showEnvWindow)
+        local_file.triggered.connect(self.openLocalFile)
+        used_space.triggered.connect(self.spaceUsage)
 
         '''
         工具栏部分
@@ -167,19 +170,23 @@ class Ui_MainWindow(object):
         self.toolBar = QToolBar(MainWindow)
         self.toolBar.setObjectName("toolBar")
         MainWindow.addToolBar(Qt.TopToolBarArea, self.toolBar)
-        choose = QAction(QIcon('UI/images/choose.png'), 'choose', self.mainwindow)
+        choose = QAction(QIcon('images/choose.png'), 'choose', self.mainwindow)
         self.toolBar.addAction(choose)
-        delete = QAction(QIcon('UI/images/delete.png'), 'delete', self.mainwindow)
+        delete = QAction(QIcon('images/delete.png'), 'delete', self.mainwindow)
         self.toolBar.addAction(delete)
 
         self.retranslateUi(MainWindow)
         QMetaObject.connectSlotsByName(MainWindow)
 
+    '''软件UI转换方法'''
+
     def retranslateUi(self, MainWindow):
         _translate = QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "网络文章下载与本地存储系统"))
 
-    def get_tree_root(self, root):
+    '''获取文件加载子线程返回的root节点'''
+
+    def getTreeRoot(self, root):
         '''
         文件树添加item方法
         :param root:
@@ -187,18 +194,20 @@ class Ui_MainWindow(object):
         '''
         self.file_thread.wait()
         self.file_tree.addTopLevelItem(root)
-        self.file_tree.doubleClicked.connect(self.file_item_double_clicked)
+        self.file_tree.doubleClicked.connect(self.fileItemDoubleClick)
         self.file_tree.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.file_tree.customContextMenuRequested.connect(self.file_tree_custom_right_menu)
+        self.file_tree.customContextMenuRequested.connect(self.fileTreeCustomRightMenu)
 
-    def file_tree_custom_right_menu(self, pos):
+    '''文件树右键菜单'''
+
+    def fileTreeCustomRightMenu(self, pos):
         item = self.file_tree.currentItem()
         file_path = item.text(1)
         menu = QMenu(self.file_tree)
         delete = menu.addAction('删除')
         copy = menu.addAction('复制')
         paste = menu.addAction('粘贴')
-        open_local_file = menu.addAction('浏览本地文件')
+        openLocalFile = menu.addAction('浏览本地文件')
         action = menu.exec_(self.file_tree.mapToGlobal(pos))
         if action == delete:
             reply = QMessageBox.warning(self.mainwindow, '删除确认', '确认删除吗？', QMessageBox.Yes | QMessageBox.No,
@@ -209,7 +218,7 @@ class Ui_MainWindow(object):
             elif not os.path.isdir(file_path) and reply == 16384:
                 print('delete file')
                 # os.remove(file_path)
-                self.update_file_tree()
+                self.updateFileTree()
 
         elif action == copy:
             try:
@@ -224,18 +233,20 @@ class Ui_MainWindow(object):
             data = QApplication.clipboard().mimeData()
             source_file_url = data.urls()[0].url()
             self.paste_thread = FilePasteThread(source_file_url[8:], file_path)
-            self.paste_thread.sinOut.connect(self.file_paste_complete)
+            self.paste_thread.sinOut.connect(self.filePasteComplete)
             self.paste_thread.start()
 
-        elif action == open_local_file:
+        elif action == openLocalFile:
 
             if '/' in file_path:
                 local_path = file_path.replace('/', '\\')
-            os.system("explorer.exe %s" % os.path.dirname(file_path))
+            os.system("explorer.exe %s" % os.path.dirname(local_path))
         else:
             QMessageBox.warning(self.mainwindow, '错误', '打开文件不存在')
 
-    def file_paste_complete(self, msg):
+    '''文件粘贴完毕后执行方法'''
+
+    def filePasteComplete(self, msg):
         '''
         文件粘贴成功回调函数
         成功后刷新重构文件树
@@ -243,9 +254,11 @@ class Ui_MainWindow(object):
         :return: None
         '''
         self.paste_thread.wait()
-        self.update_file_tree()
+        self.updateFileTree()
 
-    def update_file_tree(self):
+    '''更新文件树方法'''
+
+    def updateFileTree(self):
         self.file_tree.clear()
         self.root = QTreeWidgetItem(self.file_tree)
         self.root.setText(0, self.settings['FILE_LOCATION'].split('\\')[-1])
@@ -253,19 +266,24 @@ class Ui_MainWindow(object):
         self.root.setIcon(0, QIcon('UI/images/folder.png'))
         self.file_thread = FileListThread(self.root, self.settings['FILE_LOCATION'])
         self.file_thread.start()
-        self.file_thread.sinOut.connect(self.get_tree_root)
+        self.file_thread.sinOut.connect(self.getTreeRoot)
 
-    def file_item_double_clicked(self):
+    '''文件树item双击处理方法'''
+
+    def fileItemDoubleClick(self):
         item = self.file_tree.currentItem()
         file_path = item.text(1)
         file_path = file_path.replace('\\', '/')
         print(file_path)
         if os.path.isdir(file_path):
-            self.add_table_item(file_path)
+            self.addTableItem(file_path)
         elif file_path.endswith('.html'):
+            self.managet_tab.setVisible(False)
             self.browser.load(QUrl(file_path))
 
-    def add_menubar(self):
+    '''添加菜单栏方法'''
+
+    def addMenubar(self):
         '''
         添加菜单栏
         :return: None
@@ -283,10 +301,12 @@ class Ui_MainWindow(object):
         env_set = QAction('环境设置', self)
         help.addAction(env_set)
 
-        about.triggered.connect(self.show_about_window)
-        env_set.triggered.connect(self.show_env_window)
+        about.triggered.connect(self.showAboutWindow)
+        env_set.triggered.connect(self.showEnvWindow)
 
-    def show_about_window(self):
+    '''展示关于窗口方法'''
+
+    def showAboutWindow(self):
         '''
         打开关于窗口方法
         :return: None
@@ -295,16 +315,20 @@ class Ui_MainWindow(object):
         if dialog.exec_() == QDialog.Accepted:
             pass
 
-    def show_env_window(self):
+    '''展示环境设置窗口方法'''
+
+    def showEnvWindow(self):
         '''
         打开环境设置窗口
         :return: None
         '''
         self.env_dialog = EnvDialog(self.settings)
-        self.env_dialog.confirm.clicked.connect(self.update_settings)
+        self.env_dialog.confirm.clicked.connect(self.updateSettings)
         self.env_dialog.exec_()
 
-    def update_settings(self):
+    '''更新软件配置文件方法'''
+
+    def updateSettings(self):
         '''
         更改环境后，重新修改软件设置
         重新写入配置文件
@@ -314,9 +338,11 @@ class Ui_MainWindow(object):
         f = open('settings.json', 'w')
         json.dump(self.settings, f)
         self.env_dialog.close()
-        self.update_file_tree()
+        self.updateFileTree()
 
-    def open_local_file(self):
+    '''打开本地文件方法'''
+
+    def openLocalFile(self):
         '''
         菜单栏打开本地文件方法
         :return:
@@ -326,36 +352,38 @@ class Ui_MainWindow(object):
             local_path = local_path.replace('/', '\\')
         os.system("explorer.exe %s" % os.path.dirname(local_path))
 
-    def space_usage(self):
+    '''统计使用空间方法'''
+
+    def spaceUsage(self):
         local_path = self.settings['FILE_LOCATION']
         if '/' in local_path:
             local_path = local_path.replace('/', '\\')
         file_size = os.path.getsize(local_path)
-        print(file_size)
-        if file_size <= 1024:
-            file_size = str(round(file_size, 2)) + "K"
-        elif file_size > 1024 and file_size <= 1048576:
-            file_size = str(round(file_size / 1024, 2)) + 'M'
-        else:
-            file_size = str(round(file_size / (1024 * 1024), 2)) + 'G'
-
+        file_size = self.approximateSize(file_size)
         QMessageBox.about(self.mainwindow, '占用空间', local_path + '：' + file_size)
 
-    def add_table_item(self,file_path):
+    '''页面tableview添加item方法'''
+
+    def addTableItem(self, file_path):
+        '''
+        针对文件夹进行访问，然后添加到文件管理页面
+        :param file_path: 文件夹路径
+        :return: None
+        '''
         self.model = QStandardItemModel()
-        self.model.setHorizontalHeaderLabels(['状态','文件名','文件大小','文件类型','创建时间'])
+        self.model.setHorizontalHeaderLabels(['状态', '文件名', '文件大小', '文件类型', '创建时间'])
 
         '''添加列表选项部分'''
         file_list = os.listdir(file_path)
         for index in range(len(file_list)):
-            child_path = os.path.join(file_path,file_list[index])
+            child_path = os.path.join(file_path, file_list[index])
             child_stat = os.stat(child_path)
             child_ctime = child_stat.st_ctime
             '''文件创建时间'''
-            child_ctime = time.strftime('%Y.%m.%d %H:%M:%S',time.localtime(child_ctime))
+            child_ctime = time.strftime('%Y.%m.%d %H:%M:%S', time.localtime(child_ctime))
             if os.path.isdir(child_path):
                 child_type = 'folder'
-                child_size = self.getdirsize(child_path)
+                child_size = self.getDirSize(child_path)
             else:
                 kind = filetype.guess(child_path)
                 if kind is None:
@@ -364,36 +392,40 @@ class Ui_MainWindow(object):
                     child_type = kind.extension
                 child_size = os.path.getsize(child_path)
 
-
             '''child_size 单位换算'''
-            child_size = self.approximate_size(child_size)
+            child_size = self.approximateSize(child_size)
 
             '''列表项复选框部分'''
             item_checked = QStandardItem()
-            item_checked.setCheckState(Qt.Checked)
-            item_checked.setCheckable(False)
-            child_column = [item_checked,file_list[index],child_size,child_type,child_ctime]
+            item_checked.setCheckState(Qt.Unchecked)  # 设置默认显示复选框的状态
+            item_checked.setCheckable(True)  # 设置复选框是否可以点点击
+            child_column = [item_checked, file_list[index], child_size, child_type, child_ctime]  # 每一行记录的数据列表
 
             '''循环添加列表项'''
             for column_index in range(5):
                 item = QStandardItem(child_column[column_index])
-                self.model.setItem(index,column_index,item)
+                item.setTextAlignment(Qt.AlignCenter)
+                self.model.setItem(index, column_index, item)
+        self.model.itemChanged.connect(self.modelChanged)
+        self.tableView.setEditTriggers(QAbstractItemView.NoEditTriggers) # 表格不可编辑
         self.tableView.setModel(self.model)
         self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tableView.horizontalHeader().setSectionResizeMode(0, QHeaderView.Interactive)
-        self.tableView.setColumnWidth(0,80)
+        self.tableView.setColumnWidth(0, 80)
         self.tableView.verticalHeader().setVisible(False)
         self.tableView.setShowGrid(False)
-        # self.tableView.setRootIndex(QModelIndex(self.model.index(file_path)))
 
-    def getdirsize(slef,dir):
+    '''统一获取文件夹大小方法'''
+
+    def getDirSize(slef, dir):
         size = 0
         for root, dirs, files in os.walk(dir):
             size += sum([os.path.getsize(os.path.join(root, name)) for name in files])
         return size
 
+    '''文件存储空间单位转换方法'''
 
-    def approximate_size(self,size, a_kilobyte_is_1024_bytes=True):
+    def approximateSize(self, size, a_kilobyte_is_1024_bytes=True):
         '''Convert a file size to human-readable form.
 
         Keyword arguments:
@@ -414,3 +446,13 @@ class Ui_MainWindow(object):
             size /= multiple
             if size < multiple:
                 return '{0:.1f} {1}'.format(size, suffix)
+
+    def tableViewItemSelect(self):
+        indexs = self.tableView.selectionModel().selection().indexes()
+        print(indexs)
+
+    def modelChanged(self):
+        pass
+        # self.selected_indexs = self.tableView.selectionMode().selection().indexes()
+        # print(self.selected_indexs)
+
