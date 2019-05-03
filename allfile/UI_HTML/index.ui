@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>986</width>
-    <height>820</height>
+    <width>992</width>
+    <height>832</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -102,6 +102,9 @@
              <height>361</height>
             </rect>
            </property>
+           <property name="toolTipDuration">
+            <number>0</number>
+           </property>
            <property name="text">
             <string>TextLabel</string>
            </property>
@@ -119,11 +122,72 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>986</width>
+     <width>992</width>
      <height>26</height>
     </rect>
    </property>
+   <widget class="QMenu" name="localfile">
+    <property name="contextMenuPolicy">
+     <enum>Qt::NoContextMenu</enum>
+    </property>
+    <property name="toolTip">
+     <string>打开本地文件夹</string>
+    </property>
+    <property name="toolTipDuration">
+     <number>5</number>
+    </property>
+    <property name="statusTip">
+     <string>打开本地文件夹</string>
+    </property>
+    <property name="title">
+     <string>本地文件</string>
+    </property>
+    <property name="toolTipsVisible">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QMenu" name="usagespace">
+    <property name="contextMenuPolicy">
+     <enum>Qt::NoContextMenu</enum>
+    </property>
+    <property name="statusTip">
+     <string>统计占用磁盘空间</string>
+    </property>
+    <property name="title">
+     <string>占用空间</string>
+    </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QMenu" name="settings">
+    <property name="statusTip">
+     <string>修改软件存储位置</string>
+    </property>
+    <property name="title">
+     <string>存储设置</string>
+    </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QMenu" name="about">
+    <property name="statusTip">
+     <string>作者与邮箱</string>
+    </property>
+    <property name="title">
+     <string>关于</string>
+    </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <addaction name="localfile"/>
+   <addaction name="usagespace"/>
+   <addaction name="settings"/>
+   <addaction name="about"/>
   </widget>
+  <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <resources/>
  <connections/>

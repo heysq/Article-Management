@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import *
 class EnvDialog(QDialog):
     def __init__(self, settings, parent=None):
         super(EnvDialog, self).__init__(parent)
-        self.settings = settings
+        self.json_settings = settings
         self.setUi()
 
     def setUi(self):
@@ -21,7 +21,7 @@ class EnvDialog(QDialog):
         self.file_label = QLabel()
         self.file_label.setText('请填入文件存储目录:')
         self.file_local = QLineEdit()
-        self.file_local.setText(self.settings['FILE_LOCATION'])
+        self.file_local.setText(self.json_settings['FILE_LOCATION'])
 
         self.btn_chooseDir = QPushButton(self)
         self.btn_chooseDir.setObjectName("btn_chooseDir")
@@ -40,7 +40,7 @@ class EnvDialog(QDialog):
         self.setLayout(layout)
 
     def choose_dir(self):
-        self.file_dialog = QFileDialog.getExistingDirectory(caption='选择文件夹', directory=self.settings['FILE_LOCATION'])
+        self.file_dialog = QFileDialog.getExistingDirectory(caption='选择文件夹', directory=self.json_settings['FILE_LOCATION'])
         try:
             # os.chdir(self.file_dialog)
             self.file_local.setText(self.file_dialog)
@@ -52,8 +52,8 @@ class EnvDialog(QDialog):
 
 
     def get_env_settings(self):
-        self.settings['FILE_LOCATION'] = self.file_local.text()
-        return self.settings
+        self.json_settings['FILE_LOCATION'] = self.file_local.text()
+        return self.json_settings
 
 
 

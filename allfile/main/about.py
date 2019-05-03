@@ -26,7 +26,7 @@ class AboutDialog(QDialog):
         self.label1 = QLabel()
 
         self.label1.setText('软件商标')
-        qPixmap = QPixmap('UI/images/software.jpg')
+        qPixmap = QPixmap('../images/software.jpg')
         self.label1.setPixmap(qPixmap)
         self.label1.resize(256,256)
         self.label1.setScaledContents(True)
