@@ -7,17 +7,20 @@
 # WARNING! All changes made in this file will be lost!
 import json
 import os
+import sys
 import filetype
 import time
+import shutil
 
+from PyQt5 import QtCore
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtWebEngineWidgets import *
 
-from UI.PyQt_Thread import FileListThread, FilePasteThread
-from UI.about import AboutDialog
-from UI.env_dialog import EnvDialog
+from PyQt_Thread import FileListThread, FilePasteThread
+from about import AboutDialog
+from env_dialog import EnvDialog
 
 
 class Ui_MainWindow(object):
@@ -27,9 +30,10 @@ class Ui_MainWindow(object):
         :param parent:
         '''
         super().__init__()
-        f_settings = open('../settings.json', 'r')
+        f_settings = open('settings.json', 'r')
         self.settings = json.load(f_settings)
         self.mainwindow = mainwindow
+        f_settings.close()
 
     '''软件主界面UI设置方法'''
 
@@ -131,7 +135,7 @@ class Ui_MainWindow(object):
         self.tab_layout = QVBoxLayout(self.preview_tab)
         self.browser = QWebEngineView(self.preview_tab)
         self.browser.setMinimumSize(QSize(200, 400))
-        welcome_html = 'C:/Users/15735657423/Desktop/graduation-project/UI/welcome.html'
+        welcome_html = 'D:/graduation-project/UI/welcome.html'
         self.browser.load(QUrl(welcome_html))
         self.tab_layout.addWidget(self.browser)
         self.tabWidget.addTab(self.preview_tab, '文件预览')
@@ -169,11 +173,18 @@ class Ui_MainWindow(object):
         '''
         self.toolBar = QToolBar(MainWindow)
         self.toolBar.setObjectName("toolBar")
+        self.toolBar.setContentsMargins(QMargins(20, 0, 20, 0))
         MainWindow.addToolBar(Qt.TopToolBarArea, self.toolBar)
         choose = QAction(QIcon('images/choose.png'), 'choose', self.mainwindow)
         self.toolBar.addAction(choose)
         delete = QAction(QIcon('images/delete.png'), 'delete', self.mainwindow)
         self.toolBar.addAction(delete)
+        search_edit = QLineEdit()
+        search_edit.setMaximumWidth(200)
+        search_edit.setPlaceholderText('输入搜索内容')
+        self.toolBar.addWidget(search_edit)
+        search = QAction(QIcon('images/search.png'), 'search', self.mainwindow)
+        self.toolBar.addAction(search)
 
         self.retranslateUi(MainWindow)
         QMetaObject.connectSlotsByName(MainWindow)
@@ -215,6 +226,7 @@ class Ui_MainWindow(object):
             if os.path.isdir(file_path) and reply == 16384:
                 print('delete dir')
                 # os.removedirs(file_path)
+                shutil.rmtree(file_path)
             elif not os.path.isdir(file_path) and reply == 16384:
                 print('delete file')
                 # os.remove(file_path)
@@ -237,7 +249,6 @@ class Ui_MainWindow(object):
             self.paste_thread.start()
 
         elif action == openLocalFile:
-
             if '/' in file_path:
                 local_path = file_path.replace('/', '\\')
             os.system("explorer.exe %s" % os.path.dirname(local_path))
@@ -407,7 +418,7 @@ class Ui_MainWindow(object):
                 item.setTextAlignment(Qt.AlignCenter)
                 self.model.setItem(index, column_index, item)
         self.model.itemChanged.connect(self.modelChanged)
-        self.tableView.setEditTriggers(QAbstractItemView.NoEditTriggers) # 表格不可编辑
+        self.tableView.setEditTriggers(QAbstractItemView.NoEditTriggers)  # 表格不可编辑
         self.tableView.setModel(self.model)
         self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tableView.horizontalHeader().setSectionResizeMode(0, QHeaderView.Interactive)
@@ -456,3 +467,10 @@ class Ui_MainWindow(object):
         # self.selected_indexs = self.tableView.selectionMode().selection().indexes()
         # print(self.selected_indexs)
 
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    MainWindow = QMainWindow()
+    ui = Ui_MainWindow(MainWindow)
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec_())
