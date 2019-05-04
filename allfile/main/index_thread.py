@@ -46,6 +46,8 @@ class FileListThread(QThread):
                     child.setIcon(0, QIcon('../images/html.png'))
                 elif file.endswith('.txt'):
                     child.setIcon(0, QIcon('../images/txt.png'))
+                elif file.endswith('.xlsx'):
+                    child.setIcon(0, QIcon('../images/excel.png'))
                 else:
                     child.setIcon(0, QIcon('../images/file.png'))
 

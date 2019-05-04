@@ -8,7 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-class Ui_MainWindow(object):
+class FileStatusWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(440, 480)
@@ -16,12 +16,21 @@ class Ui_MainWindow(object):
         MainWindow.setMaximumSize(QtCore.QSize(440, 480))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.pushButton = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton.setGeometry(QtCore.QRect(320, 390, 93, 28))
-        self.pushButton.setObjectName("pushButton")
-        self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_2.setGeometry(QtCore.QRect(210, 390, 93, 28))
+        self.widget = QtWidgets.QWidget(self.centralwidget)
+        self.widget.setGeometry(QtCore.QRect(130, 400, 295, 30))
+        self.widget.setObjectName("widget")
+        self.horizontalLayout = QtWidgets.QHBoxLayout(self.widget)
+        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.pushButton_2 = QtWidgets.QPushButton(self.widget)
         self.pushButton_2.setObjectName("pushButton_2")
+        self.horizontalLayout.addWidget(self.pushButton_2)
+        self.pushButton = QtWidgets.QPushButton(self.widget)
+        self.pushButton.setObjectName("pushButton")
+        self.horizontalLayout.addWidget(self.pushButton)
+        self.pushButton_3 = QtWidgets.QPushButton(self.widget)
+        self.pushButton_3.setObjectName("pushButton_3")
+        self.horizontalLayout.addWidget(self.pushButton_3)
         self.line = QtWidgets.QFrame(self.centralwidget)
         self.line.setGeometry(QtCore.QRect(20, 90, 401, 31))
         self.line.setFrameShape(QtWidgets.QFrame.HLine)
@@ -95,9 +104,10 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "文件属性"))
         self.pushButton.setText(_translate("MainWindow", "应用"))
         self.pushButton_2.setText(_translate("MainWindow", "确定"))
+        self.pushButton_3.setText(_translate("MainWindow", "取消"))
         self.label_8.setText(_translate("MainWindow", "创建时间:"))
-        self.label_11.setText(_translate("MainWindow", "2019‎年‎4‎月‎30‎日, ‎星期二，‏‎14:39:41"))
-        self.label_13.setText(_translate("MainWindow", "2019‎年‎4‎月‎30‎日, ‎星期二，‏‎14:39:41"))
+        self.label_11.setText(_translate("MainWindow", "2019‎年‎4‎月‎30‎日, ‎星期二，‏‎14:39:12"))
+        self.label_13.setText(_translate("MainWindow", "2019‎年‎4‎月‎30‎日, ‎星期二，‏‎14:39:46"))
         self.label_6.setText(_translate("MainWindow", "大小:"))
         self.label_2.setText(_translate("MainWindow", "文件类型:"))
         self.label_3.setText(_translate("MainWindow", "html网页文件"))

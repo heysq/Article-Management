@@ -9,6 +9,8 @@ import json
 import os
 import shutil
 import sys
+import time
+from os.path import getsize, join
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QMargins, Qt, QSize, QUrl, QMimeData
@@ -20,6 +22,8 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QAction, QDi
 from env_dialog import EnvDialog
 from about import AboutDialog
 from index_thread import FileListThread, FilePasteThread
+
+from file_status import FileStatusWindow
 
 
 class Ui_MainWindow(object):
@@ -302,7 +306,7 @@ class Ui_MainWindow(object):
             if os.path.isdir(file_path) and reply == 16384:
                 print('delete dir')
                 shutil.rmtree(file_path)
-                self.statuslabel.setText("删除 -> %s 成功!"%file_path)
+                self.statuslabel.setText("删除 -> %s 成功!" % file_path)
                 self.updateFileTree()
             elif not os.path.isdir(file_path) and reply == 16384:
                 print('delete file')
@@ -317,7 +321,7 @@ class Ui_MainWindow(object):
                 clipboard = QApplication.clipboard()
                 data.setUrls([url])
                 clipboard.setMimeData(data)
-                self.statuslabel.setText("已复制 -> %s 可以执行粘贴!"%file_path)
+                self.statuslabel.setText("已复制 -> %s 可以执行粘贴!" % file_path)
             except Exception as e:
                 QMessageBox.about(self.mainwindow, '错误', '文件不存在!')
                 self.statuslabel.setText("复制 -> %s  出错，文件不存在!" % file_path)
@@ -339,6 +343,50 @@ class Ui_MainWindow(object):
 
         elif action == file_roperty:
             print('查看文件属性')
+            if os.path.isdir(file_path):
+                file_type = '文件夹'
+                file_image = '../images/file.png'
+                _dir = True
+            else:
+                _dir =False
+                if file_path.endswith('.jpg'):
+                    file_type = 'JPG图片文件( *.jpg )'
+                    file_image = '../images/jpg.png'
+                elif file_path.endswith('/html'):
+                    file_type = 'HTML页面文件( *.html )'
+                    file_image = '../images/html.png'
+                elif file_path.endswith('.xlsx'):
+                    file_type = 'XLSX表格文件( *.xlsx )'
+                    file_image = '../images/xlsx.png'
+                else:
+                    file_type = 'Other其他文件类型( *.%s)'%(os.path.splitext(file_path)[1])
+                    file_image = '../images/file.png'
+            if _dir:
+                '''文件夹大小去要遍历每个子文件夹与文件累加'''
+                file_size = self.getdirsize(file_path)
+                # print(file_path)
+                statinfo = os.stat(file_path)
+            else:
+                statinfo = os.stat(file_path)
+                file_size = statinfo.st_size
+            file_atime = self.time_format(statinfo.st_atime) # 文件最后访问时间
+            file_ctime = self.time_format(statinfo.st_ctime) # 文件创建时间
+            file_mtime = self.time_format(statinfo.st_mtime) # 文件最后修改时间
+            self.file_status_window = FileStatusWindow()
+            self.file_status_window.filename = file_path.replace('\\', '/').split('/')[-1]
+            self.status_main_window = QMainWindow(MainWindow)
+            self.file_status_window.setupUi(self.status_main_window)
+            self.file_status_window.lineEdit.setText(self.file_status_window.filename)
+            self.file_status_window.label_3.setText(file_type)
+            self.file_status_window.label_5.setText(file_path.replace('/','\\'))
+            self.file_status_window.label_9.setText(file_ctime)
+            self.file_status_window.label_11.setText(file_mtime)
+            self.file_status_window.label_13.setText(file_atime)
+            self.file_status_window.label_7.setText(str(file_size))
+            self.file_status_window.pushButton.clicked.connect(self.fileStatusUse) # 应用按钮click出发函数
+            self.file_status_window.pushButton_2.clicked.connect(self.fileStatusConfirm)  #
+            self.file_status_window.pushButton_3.clicked.connect(self.fileStatusCancel)
+            self.status_main_window.show()
 
 
     '''文件粘贴完毕后执行方法'''
@@ -351,13 +399,13 @@ class Ui_MainWindow(object):
         :return: None
         '''
         self.paste_thread.wait()
-        self.statuslabel.setText("粘贴文件 -> %s 成功!"%msg)
+        self.statuslabel.setText("粘贴文件 -> %s 成功!" % msg)
         self.updateFileTree()
 
     '''更新文件树方法'''
 
     def updateFileTree(self):
-        self.file_tree.clear()
+        self.treeWidget_2.clear()
         self.root = QTreeWidgetItem(self.treeWidget_2)
         self.root.setText(0, self.json_settings['FILE_LOCATION'].split('\\')[-1])
         self.root.setText(1, self.json_settings['FILE_LOCATION'])
@@ -366,7 +414,48 @@ class Ui_MainWindow(object):
         self.file_thread.start()
         self.file_thread.sinOut.connect(self.getTreeRoot)
 
+    def getdirsize(self,dir_path):
+        size = 0
+        for root, dirs, files in os.walk(dir_path):
+            size += sum([getsize(join(root, name)) for name in files])
+        return size
 
+    def time_format(self,timestamp):
+        time_array = time.localtime(timestamp)
+        # print(time_array)
+        week = {
+            '0':'星期日',
+            '1':'星期一',
+            '2':'星期二',
+            '3':'星期三',
+            '4':'星期四',
+            '5':'星期五',
+            '6':'星期六'
+        }
+        return f'{time_array.tm_year}年 {time_array.tm_mon}月 {time_array.tm_mday}日,{week[str(time_array.tm_wday)]}, {time_array.tm_hour}:{time_array.tm_min}:{time_array.tm_sec}'
+
+    def fileStatusConfirm(self):
+        self.status_main_window.close()
+
+    def fileStatusUse(self):
+        status_filename = self.file_status_window.lineEdit.text()
+        if status_filename != self.file_status_window.filename:
+            print('修改文件名')
+            old_file_path = self.file_status_window.label_5.text()
+            # print(old_file_path)
+            new_fila_path = '\\'.join(old_file_path.split('\\')[:-1])+ '\\'+status_filename
+            os.rename(old_file_path,new_fila_path)
+            self.statuslabel.setText('重命名文件 -> %s'%new_fila_path)
+            self.file_status_window.pushButton.setEnabled(False)
+            self.updateFileTree()
+
+    def fileStatusCancel(self):
+        self.status_main_window.close()
+
+
+
+
+        
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     MainWindow = QMainWindow()
