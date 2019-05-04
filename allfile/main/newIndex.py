@@ -7,19 +7,19 @@
 # WARNING! All changes made in this file will be lost!
 import json
 import os
+import shutil
 import sys
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QMargins, Qt, QSize, QUrl
+from PyQt5.QtCore import QMargins, Qt, QSize, QUrl, QMimeData
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QAction, QDialog, QToolBar, QLineEdit, \
-    QTreeWidgetItem
+    QTreeWidgetItem, QVBoxLayout, QMenu, QLabel
 
 from env_dialog import EnvDialog
 from about import AboutDialog
-
-from index_thread import FileListThread
+from index_thread import FileListThread, FilePasteThread
 
 
 class Ui_MainWindow(object):
@@ -130,11 +130,11 @@ class Ui_MainWindow(object):
         self.treeWidget_2.setSizePolicy(sizePolicy)
         self.treeWidget_2.setMinimumSize(QtCore.QSize(300, 0))
         self.treeWidget_2.setObjectName("treeWidget_2")
-        self.treeWidget_2.setHeaderLabels(['文件名','文件路径'])
-        # self.treeWidget_2.setHeaderHidden(True)
-        # self.treeWidget_2.setColumnHidden(1,True)
+        self.treeWidget_2.setHeaderLabels(['文件名', '文件路径'])
+        self.treeWidget_2.setHeaderHidden(True)
+        self.treeWidget_2.setColumnHidden(1, True)
         self.root = QTreeWidgetItem(self.treeWidget_2)
-        # self.json_settings['FILE_LOCATION'] = self.json_settings['FILE_LOCATION'].replace('\\', '/')
+        self.json_settings['FILE_LOCATION'] = self.json_settings['FILE_LOCATION'].replace('\\', '/')
         self.root.setText(0, self.json_settings['FILE_LOCATION'].split('/')[-1])
         self.root.setText(1, self.json_settings['FILE_LOCATION'])
         self.root.setIcon(0, QIcon('../images/folder.png'))
@@ -153,28 +153,18 @@ class Ui_MainWindow(object):
         self.tabWidget.setObjectName("tabWidget")
         self.tab_3 = QtWidgets.QWidget()
         self.tab_3.setObjectName("tab_3")
-        self.tableView = QtWidgets.QTableView(self.tab_3)
-        self.tableView.setGeometry(QtCore.QRect(0, 0, 651, 741))
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.tableView.sizePolicy().hasHeightForWidth())
-        self.tableView.setSizePolicy(sizePolicy)
-        self.tableView.setObjectName("tableView")
         self.tabWidget.addTab(self.tab_3, "文件管理")
 
         '''右侧文件预览'''
         self.tab_4 = QtWidgets.QWidget()
         self.tab_4.setObjectName("tab_4")
-        self.label = QtWidgets.QLabel(self.tab_4)
-        self.label.setGeometry(QtCore.QRect(160, 90, 351, 361))
-        self.label.setToolTipDuration(0)
-        self.label.setObjectName("label")
         self.tabWidget.addTab(self.tab_4, "文件预览")
         self.browser = QWebEngineView(self.tab_4)
-        self.browser.setMinimumSize(QSize(200, 400))
-        self.preview_path = 'D:/graduation-project/allfile/UI_HTML/welcome.html'
-        self.browser.load(QUrl(self.preview_path))
+        self.tab_layout = QVBoxLayout(self.tab_4)
+        self.browser.setMinimumSize(QSize(400, 200))
+        self.tab_layout.addWidget(self.browser)
+        self.browser.load(QUrl('D:/graduation-project/allfile/UI_HTML/welcome.html'))
+
         self.horizontalLayout.addWidget(self.splitter)
         self.horizontalLayout_2.addLayout(self.horizontalLayout)
         MainWindow.setCentralWidget(self.centralwidget)
@@ -182,24 +172,17 @@ class Ui_MainWindow(object):
         '''状态栏部分'''
         self.statusBar = QtWidgets.QStatusBar(MainWindow)
         self.statusBar.setObjectName("statusBar")
+        self.statuslabel = QLabel()
+        self.statuslabel.setText('程序就绪!')
+        self.statusBar.addWidget(self.statuslabel)
         MainWindow.setStatusBar(self.statusBar)
-
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        # self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "文件管理"))
-        self.label.setText(_translate("MainWindow", "TextLabel"))
-        # self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("MainWindow", "文件预览"))
-
-
-
-    def menubar_triggered(self,q):
-        print(q.text)
 
     def openLocalFile(self):
         '''
@@ -285,7 +268,7 @@ class Ui_MainWindow(object):
         self.treeWidget_2.addTopLevelItem(root)
         self.treeWidget_2.doubleClicked.connect(self.fileItemDoubleClick)
         self.treeWidget_2.setContextMenuPolicy(Qt.CustomContextMenu)
-        # self.treeWidget_2.customContextMenuRequested.connect(self.fileTreeCustomRightMenu)
+        self.treeWidget_2.customContextMenuRequested.connect(self.fileTreeCustomRightMenu)
 
     def fileItemDoubleClick(self):
         item = self.treeWidget_2.currentItem()
@@ -295,16 +278,93 @@ class Ui_MainWindow(object):
         if os.path.isdir(file_path):
             pass
         else:
-            if file_path.endswith('.html'):
-                pass
-            elif file_path.endswith('.jpg'):
-                pass
-            elif file_path.endswith('txt'):
-                pass
-            elif file_path.endswith('xlsx'):
-                pass
+            if file_path.endswith('.html') or file_path.endswith('.jpg') or file_path.endswith('.png'):
+                file_url = file_path.replace('\\', '/')
+                self.browser.load(QUrl('file:///' + file_url))
             else:
                 pass
+
+    '''文件树右键菜单'''
+
+    def fileTreeCustomRightMenu(self, pos):
+        item = self.treeWidget_2.currentItem()
+        file_path = item.text(1)
+        menu = QMenu(self.treeWidget_2)
+        delete = menu.addAction('删除')
+        copy = menu.addAction('复制')
+        paste = menu.addAction('粘贴')
+        openLocalFile = menu.addAction('浏览本地文件')
+        file_roperty = menu.addAction("属性")
+        action = menu.exec_(self.treeWidget_2.mapToGlobal(pos))
+        if action == delete:
+            reply = QMessageBox.warning(self.mainwindow, '删除确认', '确认删除吗？', QMessageBox.Yes | QMessageBox.No,
+                                        QMessageBox.No)
+            if os.path.isdir(file_path) and reply == 16384:
+                print('delete dir')
+                shutil.rmtree(file_path)
+                self.statuslabel.setText("删除 -> %s 成功!"%file_path)
+                self.updateFileTree()
+            elif not os.path.isdir(file_path) and reply == 16384:
+                print('delete file')
+                os.remove(file_path)
+                self.statuslabel.setText("删除 -> %s 成功!" % file_path)
+                self.updateFileTree()
+
+        elif action == copy:
+            try:
+                data = QMimeData()
+                url = QUrl.fromLocalFile(file_path)
+                clipboard = QApplication.clipboard()
+                data.setUrls([url])
+                clipboard.setMimeData(data)
+                self.statuslabel.setText("已复制 -> %s 可以执行粘贴!"%file_path)
+            except Exception as e:
+                QMessageBox.about(self.mainwindow, '错误', '文件不存在!')
+                self.statuslabel.setText("复制 -> %s  出错，文件不存在!" % file_path)
+
+        elif action == paste:
+            data = QApplication.clipboard().mimeData()
+            source_file_url = data.urls()[0].url()
+            self.paste_thread = FilePasteThread(source_file_url[8:], file_path)
+            self.paste_thread.sinOut.connect(self.filePasteComplete)
+            self.paste_thread.start()
+
+
+        elif action == openLocalFile:
+            try:
+                local_path = file_path.replace('/', '\\')
+                os.system("explorer.exe %s" % os.path.dirname(local_path))
+            except Exception as e:
+                QMessageBox.warning(self.mainwindow, '错误', '打开文件不存在!')
+
+        elif action == file_roperty:
+            print('查看文件属性')
+
+
+    '''文件粘贴完毕后执行方法'''
+
+    def filePasteComplete(self, msg):
+        '''
+        文件粘贴成功回调函数
+        成功后刷新重构文件树
+        :param msg:
+        :return: None
+        '''
+        self.paste_thread.wait()
+        self.statuslabel.setText("粘贴文件 -> %s 成功!"%msg)
+        self.updateFileTree()
+
+    '''更新文件树方法'''
+
+    def updateFileTree(self):
+        self.file_tree.clear()
+        self.root = QTreeWidgetItem(self.treeWidget_2)
+        self.root.setText(0, self.json_settings['FILE_LOCATION'].split('\\')[-1])
+        self.root.setText(1, self.json_settings['FILE_LOCATION'])
+        self.root.setIcon(0, QIcon('../images/folder.png'))
+        self.file_thread = FileListThread(self.root, self.json_settings['FILE_LOCATION'])
+        self.file_thread.start()
+        self.file_thread.sinOut.connect(self.getTreeRoot)
 
 
 if __name__ == '__main__':
