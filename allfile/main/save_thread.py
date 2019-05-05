@@ -51,6 +51,8 @@ class SavePageUrlThread(QThread):
         height = self.bro.get_window_rect()['height']  # 浏览器窗口高度
         screen_path = os.path.join(self.fileLoacation, self.saveType, self.filename, 'screenshots')  # 截图保存路径
         screen_dict = {}  # 存放每个屏幕截图的列表，用于合成页面长途
+
+        print(js_height,height)
         if js_height % height == 0:
             screen_num = js_height // height
         else:

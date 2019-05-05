@@ -8,6 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class FileStatusWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -88,8 +89,7 @@ class FileStatusWindow(object):
         self.lineEdit.setAutoFillBackground(False)
         self.lineEdit.setObjectName("lineEdit")
         self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(40, 10, 90, 100))
-        self.label.setMinimumSize(QtCore.QSize(0, 100))
+        self.label.setGeometry(QtCore.QRect(40, 10, 90, 90))
         self.label.setObjectName("label")
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -118,5 +118,3 @@ class FileStatusWindow(object):
         self.label_12.setText(_translate("MainWindow", "访问时间:"))
         self.label_5.setText(_translate("MainWindow", "D:\\graduation-project\\articl\\csdnCSDN-专业IT技术社区\\"))
         self.lineEdit.setText(_translate("MainWindow", "文件名"))
-        self.label.setText(_translate("MainWindow", "文件类型图片"))
-
