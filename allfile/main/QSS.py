@@ -163,12 +163,5 @@ QDoubleSpinBox = '''
 
 '''
 
-QTableWidget = '''
-    QTableWidget{
-    background:none;
-    font-size:16px;
-    padding:20px
-    }
 
-'''
 

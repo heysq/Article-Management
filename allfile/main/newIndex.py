@@ -13,20 +13,18 @@ import time
 import QSS
 from os.path import getsize, join
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QMargins, Qt, QSize, QUrl, QMimeData, QDir, QStringListModel
-from PyQt5.QtGui import QIcon, QPixmap, QStandardItemModel, QStandardItem
-from PyQt5.QtWebEngineWidgets import QWebEngineView
+from PyQt5 import QtCore,QtWidgets
+from PyQt5.QtCore import QMargins, Qt, QSize, QUrl, QMimeData
+from PyQt5.QtGui import QIcon, QPixmap, QColor
+
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QAction, QDialog, QToolBar, QLineEdit, \
-    QTreeWidgetItem, QVBoxLayout, QMenu, QLabel, QPushButton, QSpinBox, QSlider, QDoubleSpinBox, QListView, QDirModel, \
-    QHeaderView, QTableWidget, QTableWidgetItem, QAbstractItemView
+    QTreeWidgetItem, QVBoxLayout, QMenu, QPushButton, QDoubleSpinBox, \
+    QHeaderView, QTableWidget, QTableWidgetItem, QAbstractItemView, QFrame
 
 from env_dialog import EnvDialog
 from about import AboutDialog
 from index_thread import FileListThread, FilePasteThread
-
 from file_status import FileStatusWindow
-
 from MyBrowser import Browser
 
 
@@ -118,12 +116,12 @@ class Ui_MainWindow(object):
         delete_button.setIconSize(QSize(25, 25))
         delete_button.setStyleSheet(QSS.ButtonStyle)
 
-        search_edit = QLineEdit()
-        search_edit.setMaximumWidth(200)
-        search_edit.setFixedHeight(30)
-        search_edit.setPlaceholderText('输入搜索内容')
-        search_edit.setStyleSheet(QSS.LineEdit)
-        self.toolBar.addWidget(search_edit)
+        self.search_edit = QLineEdit()
+        self.search_edit.setMaximumWidth(200)
+        self.search_edit.setFixedHeight(30)
+        self.search_edit.setPlaceholderText('输入搜索内容')
+        self.search_edit.setStyleSheet(QSS.LineEdit)
+        self.toolBar.addWidget(self.search_edit)
 
         search_button = QPushButton()
         search_button.setText('搜索')
@@ -132,6 +130,7 @@ class Ui_MainWindow(object):
         search_button.setIcon(search_icon)
         search_button.setIconSize(QSize(25, 25))
         search_button.setStyleSheet(QSS.ButtonStyle)
+        search_button.clicked.connect(self._search)
 
         '''放大按钮'''
         self.zoom_in_button = QPushButton(self.mainwindow)
@@ -222,6 +221,7 @@ class Ui_MainWindow(object):
         self.tab_3 = QtWidgets.QWidget()
         self.tab_3.setObjectName("tab_3")
         self.table_widget = self.get_file_list(self.json_settings['FILE_LOCATION'])
+        self.paths = [self.json_settings['FILE_LOCATION'],]
         self.tab3_layout = QVBoxLayout(self.tab_3)
         self.tab3_layout.addWidget(self.tablewidget)
         self.tabWidget.addTab(self.tab_3, "文件管理")
@@ -331,6 +331,31 @@ class Ui_MainWindow(object):
             if size < multiple:
                 return '{0:.1f} {1}'.format(size, suffix)
 
+
+    '''搜索按钮点击事件函数'''
+    def _search(self):
+        print(self.search_edit.text())
+        self.search_name = self.search_edit.text()
+        self.search_res = []
+        self.recursion_search(self.search_name,self.json_settings['FILE_LOCATION'],self.search_res)
+
+
+    def recursion_search(self,search_name,search_path,res=[]):
+        for filename in os.listdir(search_path):
+            temp_path = os.path.join(search_path,filename)
+            if os.path.isdir(temp_path):
+                if search_name in filename:
+                    res.append(temp_path)
+                else:
+                    self.recursion_search(search_name,temp_path,res)
+            else:
+                if search_name in filename:
+                    res.append(temp_path)
+                else:
+                    return res
+
+
+
     '''获取文件加载子线程返回的root节点'''
 
     def getTreeRoot(self, root):
@@ -349,9 +374,15 @@ class Ui_MainWindow(object):
         item = self.treeWidget_2.currentItem()
         file_path = item.text(1)
         # file_path = file_path.replace('\\', '/')
-        # print(file_path)
+        print(file_path)
         if os.path.isdir(file_path):
-            pass
+            self.paths.append(file_path)
+            self.tab3_layout.removeWidget(self.tablewidget)
+            self.tablewidget = self.get_file_list(file_path)
+            self.tab3_layout.addWidget(self.tablewidget)
+            self.tablewidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+            self.tablewidget.customContextMenuRequested['QPoint'].connect(self.tablewidget_right_menu)
+            self.tabWidget.setCurrentIndex(0)
         else:
             if file_path.endswith('.html') or file_path.endswith('.jpg') or file_path.endswith('.png'):
                 file_url = file_path.replace('\\', '/')
@@ -370,7 +401,12 @@ class Ui_MainWindow(object):
                 self.statusBar.showMessage(f'预览文件 -> {filename} , 请等候...')
                 self.browser.loadFinished.connect(self.browser_finished)
             else:
-                pass
+                reply = QMessageBox.information(self.mainwindow,
+                                                "调用系统软件",
+                                                "软件不支持此类型文件打开！\n是否调用系统程序打开此文件?",
+                                                QMessageBox.Yes | QMessageBox.No)
+                if reply == 16384:
+                    os.startfile(file_path)
 
     '''文件树右键菜单'''
 
@@ -391,6 +427,10 @@ class Ui_MainWindow(object):
                 print('delete dir')
                 shutil.rmtree(file_path)
                 self.statusBar.showMessage(f'删除 {file_path} 成功！')
+                if file_path == self.paths[-1]:
+                    # 删除的是当前文件管理显示的文件夹 需要推倒上一级
+                    current_path = self.paths.pop()
+                    self.paths.append(os.path.dirname(current_path))
                 self.updateFileTree()
             elif not os.path.isdir(file_path) and reply == 16384:
                 print('delete file')
@@ -427,7 +467,7 @@ class Ui_MainWindow(object):
                 QMessageBox.warning(self.mainwindow, '错误', '打开文件不存在!')
 
         elif action == file_roperty:
-            print('查看文件属性')
+            # print('查看文件属性')
             if os.path.isdir(file_path):
                 file_type = '文件夹'
                 file_image = '../images/folder_status.png'
@@ -470,7 +510,7 @@ class Ui_MainWindow(object):
             self.file_status_window.label_9.setText(file_ctime)
             self.file_status_window.label_11.setText(file_mtime)
             self.file_status_window.label_13.setText(file_atime)
-            self.file_status_window.label_7.setText(str(file_size))
+            self.file_status_window.label_7.setText(self.approximateSize(file_size))
             self.file_status_window.pushButton.clicked.connect(self.fileStatusUse)  # 应用按钮click出发函数
             self.file_status_window.pushButton_2.clicked.connect(self.fileStatusConfirm)
             self.file_status_window.pushButton_3.clicked.connect(self.fileStatusCancel)
@@ -499,6 +539,12 @@ class Ui_MainWindow(object):
         self.root.setText(0, self.json_settings['FILE_LOCATION'].split('\\')[-1])
         self.root.setText(1, self.json_settings['FILE_LOCATION'])
         self.root.setIcon(0, QIcon('../images/folder.png'))
+
+        self.tab3_layout.removeWidget(self.tablewidget)
+        del self.tablewidget
+        self.tablewidget = self.get_file_list(self.paths[-1])
+        self.tab3_layout.addWidget(self.tablewidget)
+
         self.file_thread = FileListThread(self.root, self.json_settings['FILE_LOCATION'])
         self.file_thread.start()
         self.file_thread.sinOut.connect(self.getTreeRoot)
@@ -584,7 +630,6 @@ class Ui_MainWindow(object):
         file_list = os.listdir(file_path)
         rows = len(file_list)
         self.tablewidget = QTableWidget()
-        self.tablewidget.setStyleSheet(QSS.QTableWidget)
         self.tablewidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # 所有列自动拉伸，充满界面
         self.tablewidget.setRowCount(rows)
         self.tablewidget.setColumnCount(4)
@@ -593,19 +638,142 @@ class Ui_MainWindow(object):
         self.tablewidget.verticalHeader().setVisible(False)
         self.tablewidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tablewidget.setShowGrid(False)
+        self.tablewidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tablewidget.horizontalHeader().setSectionResizeMode(0, QHeaderView.Interactive)
+        self.tablewidget.setColumnWidth(1,100)
+        self.tablewidget.setColumnWidth(2,50)
+        self.tablewidget.setColumnWidth(3,50)
+        self.tablewidget.setFocusPolicy(Qt.NoFocus)  #  去除选中后的虚线框
+        self.tablewidget.itemDoubleClicked.connect(self.tablewidget_double_clicked)
+        self.tablewidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.tablewidget.customContextMenuRequested['QPoint'].connect(self.tablewidget_right_menu)
+
+
         table_header = self.tablewidget.horizontalHeader()
-        table_header.setDefaultAlignment(Qt.AlignLeft)
+        table_header.setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         header_font = table_header.font()
         header_font.setBold(True)
         table_header.setFont(header_font)
+        table_header.setStyleSheet('''
+                QHeaderView::section{
+                        padding-left: 30px;
+                        height:40px;
+                        font-size:18px; 
+                        background-color: #D1D1D1;
+                    }
+                ''')
         for row_num in range(rows): # 行号
-
             if os.path.isdir(os.path.join(file_path,file_list[row_num])):
                 file_type = '文件夹'
                 statinfo = os.stat(os.path.join(file_path, file_list[row_num]))
                 last_update_time = self.time_format(statinfo.st_mtime)  # 最后修改时间
                 file_info = [file_list[row_num],last_update_time,file_type,'']
             else:
+                if file_list[row_num].endswith('.jpg'):
+                    file_type = 'JPG图片文件( *.jpg )'
+                    file_image = '../images/jpg_status.png'
+                elif file_list[row_num].endswith('.html'):
+                    file_type = 'HTML页面文件( *.html )'
+                    file_image = '../images/html_status.png'
+                elif file_list[row_num].endswith('.xlsx'):
+                    file_type = 'XLSX表格文件( *.xlsx )'
+                    file_image = '../images/excel_status.png'
+                elif file_list[row_num].endswith('.png'):
+                    file_type = 'XLSX表格文件( *.xlsx )'
+                    file_image = '../images/png_status.png'
+                else:
+                    file_type = 'Other其他文件类型( *.%s)' % (os.path.splitext(file_list[row_num])[1])
+                    file_image = '../images/file_status.png'
+                statinfo = os.stat(os.path.join(file_path, file_list[row_num]))
+                last_update_time = self.time_format(statinfo.st_mtime)  # 最后修改时间
+                file_size = self.approximateSize(statinfo.st_size)
+                file_info = [file_list[row_num], last_update_time, file_type,file_size]
+
+
+            for i in range(4):
+                item = QTableWidgetItem(file_info[i])
+                self.tablewidget.setItem(row_num,i,item)
+            self.tablewidget.setRowHeight(row_num,50)
+            self.tablewidget.setStyleSheet('''
+                    QTableWidget::item {
+                        padding: 10px;
+                        border: 0px solid red;
+                        
+                        }
+                    QTableWidget::item:selected {
+                        color: black;
+                        background-color: rgb(102,204,204);
+                        }
+
+
+            ''')
+        return self.tablewidget
+
+    def tablewidget_right_menu(self,pos):
+        item_row = self.tablewidget.currentRow()
+        item_column = self.tablewidget.currentColumn()
+        file_name = self.tablewidget.item(item_row,0).text()
+        file_path = os.path.join(self.paths[-1],file_name)
+        file_path = file_path.replace('\\','/')
+        print(file_path)
+        menu = QMenu(self.tablewidget)
+        delete = menu.addAction('删除')
+        copy = menu.addAction('复制')
+        paste = menu.addAction('粘贴')
+        openLocalFile = menu.addAction('浏览本地文件')
+        file_roperty = menu.addAction("属性")
+        action = menu.exec_(self.tablewidget.mapToGlobal(pos))
+        if action == delete:
+            reply = QMessageBox.warning(self.mainwindow, '删除确认', '确认删除吗？', QMessageBox.Yes | QMessageBox.No,
+                                        QMessageBox.No)
+            if os.path.isdir(file_path) and reply == 16384:
+                print('delete dir')
+                shutil.rmtree(file_path)
+                self.statusBar.showMessage(f'删除 {file_path} 成功！')
+                self.updateFileTree()
+            elif not os.path.isdir(file_path) and reply == 16384:
+                print('delete file')
+                os.remove(file_path)
+                self.statusBar.showMessage("删除 -> %s 成功!" % file_path)
+                print(self.paths)
+                self.updateFileTree()
+                self.statusBar.showMessage(f'删除 {file_path} 成功!')
+
+        elif action == copy:
+            try:
+                data = QMimeData()
+                url = QUrl.fromLocalFile(file_path)
+                clipboard = QApplication.clipboard()
+                data.setUrls([url])
+                clipboard.setMimeData(data)
+                self.statusBar.showMessage("已复制 -> %s 到剪切板" % file_path)
+            except Exception as e:
+                QMessageBox.about(self.mainwindow, '错误', '文件不存在!')
+                self.statusBar.showMessage("复制 -> %s  出错，文件不存在!" % file_path)
+
+        elif action == paste:
+            data = QApplication.clipboard().mimeData()
+            source_file_url = data.urls()[0].url()
+            self.paste_thread = FilePasteThread(source_file_url[8:], file_path)
+            self.paste_thread.sinOut.connect(self.filePasteComplete)
+            self.paste_thread.start()
+
+
+        elif action == openLocalFile:
+            try:
+                local_path = file_path.replace('/', '\\')
+                os.system("explorer.exe %s" % os.path.dirname(local_path))
+            except Exception as e:
+                QMessageBox.warning(self.mainwindow, '错误', '打开文件不存在!')
+
+        elif action == file_roperty:
+            print('查看文件属性')
+            if os.path.isdir(file_path):
+                file_type = '文件夹'
+                file_image = '../images/folder_status.png'
+                _dir = True
+            else:
+                _dir = False
                 if file_path.endswith('.jpg'):
                     file_type = 'JPG图片文件( *.jpg )'
                     file_image = '../images/jpg_status.png'
@@ -621,17 +789,73 @@ class Ui_MainWindow(object):
                 else:
                     file_type = 'Other其他文件类型( *.%s)' % (os.path.splitext(file_path)[1])
                     file_image = '../images/file_status.png'
-                statinfo = os.stat(os.path.join(file_path, file_list[row_num]))
-                last_update_time = self.time_format(statinfo.st_mtime)  # 最后修改时间
-                file_size = self.approximateSize(statinfo.st_size)
-                file_info = [file_list[row_num], last_update_time, file_type,file_size]
+            if _dir:
+                '''文件夹大小去要遍历每个子文件夹与文件累加'''
+                file_size = self.getdirsize(file_path)
+                # print(file_path)
+                statinfo = os.stat(file_path)
+            else:
+                statinfo = os.stat(file_path)
+                file_size = statinfo.st_size
+            file_atime = self.time_format(statinfo.st_atime)  # 文件最后访问时间
+            file_ctime = self.time_format(statinfo.st_ctime)  # 文件创建时间
+            file_mtime = self.time_format(statinfo.st_mtime)  # 文件最后修改时间
+            self.file_status_window = FileStatusWindow()
+            self.file_status_window.filename = file_path.replace('\\', '/').split('/')[-1]
+            self.status_main_window = QMainWindow(MainWindow)
+            self.file_status_window.setupUi(self.status_main_window)
+            self.file_status_window.lineEdit.setText(self.file_status_window.filename)
+            self.file_status_window.label_3.setText(file_type)
+            self.file_status_window.label_5.setText(file_path.replace('/', '\\'))
+            self.file_status_window.label_9.setText(file_ctime)
+            self.file_status_window.label_11.setText(file_mtime)
+            self.file_status_window.label_13.setText(file_atime)
+            self.file_status_window.label_7.setText(self.approximateSize(file_size))
+            self.file_status_window.pushButton.clicked.connect(self.fileStatusUse)  # 应用按钮click出发函数
+            self.file_status_window.pushButton_2.clicked.connect(self.fileStatusConfirm)
+            self.file_status_window.pushButton_3.clicked.connect(self.fileStatusCancel)
+            pix = QPixmap(file_image)
+            self.file_status_window.label.setPixmap(pix)
+            self.status_main_window.show()
 
+    def tablewidget_double_clicked(self):
+        row = self.tablewidget.currentRow() # 拿到当前行
+        file_name = self.tablewidget.item(row,0).text()
+        print(file_name)
+        file_path = os.path.join(self.paths[-1],file_name).replace('\\','/')
+        if os.path.isdir(file_path):
+            # 文件夹 执行打开操作
+            self.paths.append(file_path)
+            self.tab3_layout.removeWidget(self.tablewidget)
+            del self.tablewidget
+            self.tablewidget = self.get_file_list(self.paths[-1])
+            self.tab3_layout.addWidget(self.tablewidget)
 
-            for i in range(4):
-                item = QTableWidgetItem(file_info[i])
-                self.tablewidget.setItem(row_num,i,item)
-
-        return self.tablewidget
+        else:
+            # 不是文件夹  判断文件类型，执行预览操作
+            if file_path.endswith('jpg') or file_path.endswith('.png') or file_path.endswith('html') or file_path.endswith('pdf'):
+                file_path = file_path.replace('\\', '/')
+                self.browser.stop()
+                self.browser.destroy()
+                self.browser.close()
+                del self.browser
+                self.browser = Browser()
+                self.tab_layout.addWidget(self.browser)
+                self.browser.load(QUrl('file:///' + file_path))
+                self.zoom_in_button.clicked.connect(self.zoom_in_func)  # 放大与缩小按钮出发事件设置
+                self.zoom_out_button.clicked.connect(self.zoom_out_func)
+                self.sp.setValue(self.browser.zoomFactor())
+                filename = file_path.split('/')[-1]
+                self.tabWidget.setCurrentIndex(1)
+                self.statusBar.showMessage(f'预览文件 -> {filename} , 请等候...')
+                self.browser.loadFinished.connect(self.browser_finished)
+            else:
+                reply = QMessageBox.information(self.mainwindow,
+                                                "调用系统软件",
+                                                "软件不支持此类型文件打开！\n是否调用系统程序打开此文件?",
+                                                QMessageBox.Yes | QMessageBox.No)
+                if reply == 16384:
+                    os.startfile(file_path)
 
 
 
