@@ -334,10 +334,94 @@ class Ui_MainWindow(object):
 
     '''搜索按钮点击事件函数'''
     def _search(self):
-        print(self.search_edit.text())
         self.search_name = self.search_edit.text()
-        self.search_res = []
-        self.recursion_search(self.search_name,self.json_settings['FILE_LOCATION'],self.search_res)
+        if not self.search_name:
+            pass
+        else:
+            self.search_res = []
+            self.recursion_search(self.search_name,self.json_settings['FILE_LOCATION'],self.search_res)
+            self.tab3_layout.removeWidget(self.tablewidget)
+            del self.tablewidget
+            rows = len(self.search_res)
+            self.tablewidget = QTableWidget()
+            self.tablewidget.horizontalHeader().setStretchLastSection(True) # 最后一列 自动覆盖表格
+            self.tablewidget.setRowCount(rows)
+            self.tablewidget.setColumnCount(5)
+            self.tablewidget.setHorizontalHeaderLabels(['文件名', '最后修改日期', '类型', '大小','位置'])
+            self.tablewidget.setSelectionBehavior(QAbstractItemView.SelectRows)
+            self.tablewidget.verticalHeader().setVisible(False)
+            self.tablewidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            self.tablewidget.setShowGrid(False)
+            self.tablewidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            self.tablewidget.horizontalHeader().setSectionResizeMode(0, QHeaderView.Interactive)
+            # self.tablewidget.horizontalHeader().setSectionResizeMode(1, QHeaderView.Interactive)
+            self.tablewidget.setColumnWidth(1,120)
+            self.tablewidget.horizontalHeader().setSectionResizeMode(2, QHeaderView.Interactive)
+            self.tablewidget.horizontalHeader().setSectionResizeMode(3, QHeaderView.Interactive)
+            self.tablewidget.horizontalHeader().setSectionResizeMode(4, QHeaderView.Interactive)
+            self.tablewidget.setFocusPolicy(Qt.NoFocus)  # 去除选中后的虚线框
+            self.tablewidget.itemDoubleClicked.connect(self.tablewidget_double_clicked)
+            self.tablewidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+            self.tablewidget.customContextMenuRequested['QPoint'].connect(self.tablewidget_right_menu)
+
+            table_header = self.tablewidget.horizontalHeader()
+            table_header.setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            header_font = table_header.font()
+            header_font.setBold(True)
+            table_header.setFont(header_font)
+            table_header.setStyleSheet('''
+                            QHeaderView::section{
+                                    padding-left: 30px;
+                                    height:40px;
+                                    font-size:18px; 
+                                    background-color: #D1D1D1;
+                                }
+                            ''')
+            for num in range(rows):
+                file_path = self.search_res[num].replace('\\','/')
+                file_name = file_path.split('/')[-1]
+                if os.path.isdir(file_path):
+                    file_type = '文件夹'
+                    statinfo = os.stat(file_path)
+                    last_update_time = self.time_format(statinfo.st_mtime)  # 最后修改时间
+                    file_info = [file_name,last_update_time,file_type,'',os.path.dirname(file_path)] # 将要显示在文件管理区域的文件信息
+                else:
+                    if file_name.endswith('.jpg'):
+                        file_type = 'JPG图片文件( *.jpg )'
+                    elif file_name.endswith('.html'):
+                        file_type = 'HTML页面文件( *.html )'
+                    elif file_name.endswith('.xlsx'):
+                        file_type = 'XLSX表格文件( *.xlsx )'
+                    elif file_name.endswith('.png'):
+                        file_type = 'PNG图片文件( *.png )'
+                    else:
+                        file_type = 'Other其他文件类型( *.%s)' % (os.path.splitext(file_name[1]))
+                    statinfo = os.stat(os.path.join(file_path))
+                    last_update_time = self.time_format(statinfo.st_mtime)  # 最后修改时间
+                    file_size = self.approximateSize(statinfo.st_size)
+                    file_info = [file_name, last_update_time, file_type,file_size,os.path.dirname(file_path)]
+
+
+                for i in range(5):
+                    item = QTableWidgetItem(file_info[i])
+                    self.tablewidget.setItem(num,i,item)
+                self.tablewidget.setRowHeight(num, 50)
+                self.tablewidget.setStyleSheet('''
+                                    QTableWidget::item {
+                                        padding: 10px;
+                                        border: 0px solid red;
+    
+                                        }
+                                    QTableWidget::item:selected {
+                                        color: black;
+                                        background-color: rgb(102,204,204);
+                                        }
+    
+    
+                            ''')
+            self.search_edit.setText('')
+            self.tab3_layout.addWidget(self.tablewidget)
+
 
 
     def recursion_search(self,search_name,search_path,res=[]):
@@ -484,7 +568,7 @@ class Ui_MainWindow(object):
                     file_type = 'XLSX表格文件( *.xlsx )'
                     file_image = '../images/excel_status.png'
                 elif file_path.endswith('.png'):
-                    file_type = 'XLSX表格文件( *.xlsx )'
+                    file_type = 'PNG图片文件( *.png )'
                     file_image = '../images/png_status.png'
                 else:
                     file_type = 'Other其他文件类型( *.%s)' % (os.path.splitext(file_path)[1])
@@ -630,23 +714,27 @@ class Ui_MainWindow(object):
         file_list = os.listdir(file_path)
         rows = len(file_list)
         self.tablewidget = QTableWidget()
-        self.tablewidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # 所有列自动拉伸，充满界面
+        self.tablewidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tablewidget.horizontalHeader().setStretchLastSection(True)# 所有列自动拉伸，充满界面
         self.tablewidget.setRowCount(rows)
-        self.tablewidget.setColumnCount(4)
-        self.tablewidget.setHorizontalHeaderLabels(['文件名', '最后修改日期', '类型', '大小'])
+        self.tablewidget.setColumnCount(5)
+        self.tablewidget.setColumnHidden(4,True)
+        self.tablewidget.setHorizontalHeaderLabels(['文件名', '最后修改日期', '类型', '大小','位置'])
         self.tablewidget.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tablewidget.verticalHeader().setVisible(False)
         self.tablewidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tablewidget.setShowGrid(False)
         self.tablewidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tablewidget.horizontalHeader().setSectionResizeMode(0, QHeaderView.Interactive)
-        self.tablewidget.setColumnWidth(1,100)
-        self.tablewidget.setColumnWidth(2,50)
-        self.tablewidget.setColumnWidth(3,50)
+        self.tablewidget.horizontalHeader().setSectionResizeMode(1, QHeaderView.Interactive)
+        self.tablewidget.horizontalHeader().setSectionResizeMode(2, QHeaderView.Interactive)
+        self.tablewidget.horizontalHeader().setSectionResizeMode(3, QHeaderView.Interactive)
+        self.tablewidget.horizontalHeader().setSectionResizeMode(4, QHeaderView.Interactive)
         self.tablewidget.setFocusPolicy(Qt.NoFocus)  #  去除选中后的虚线框
         self.tablewidget.itemDoubleClicked.connect(self.tablewidget_double_clicked)
         self.tablewidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.tablewidget.customContextMenuRequested['QPoint'].connect(self.tablewidget_right_menu)
+
 
 
         table_header = self.tablewidget.horizontalHeader()
@@ -667,7 +755,7 @@ class Ui_MainWindow(object):
                 file_type = '文件夹'
                 statinfo = os.stat(os.path.join(file_path, file_list[row_num]))
                 last_update_time = self.time_format(statinfo.st_mtime)  # 最后修改时间
-                file_info = [file_list[row_num],last_update_time,file_type,'']
+                file_info = [file_list[row_num],last_update_time,file_type,'',os.path.join(file_path,file_list[row_num])]
             else:
                 if file_list[row_num].endswith('.jpg'):
                     file_type = 'JPG图片文件( *.jpg )'
@@ -679,7 +767,7 @@ class Ui_MainWindow(object):
                     file_type = 'XLSX表格文件( *.xlsx )'
                     file_image = '../images/excel_status.png'
                 elif file_list[row_num].endswith('.png'):
-                    file_type = 'XLSX表格文件( *.xlsx )'
+                    file_type = 'PNG图片文件( *.png )'
                     file_image = '../images/png_status.png'
                 else:
                     file_type = 'Other其他文件类型( *.%s)' % (os.path.splitext(file_list[row_num])[1])
@@ -687,10 +775,10 @@ class Ui_MainWindow(object):
                 statinfo = os.stat(os.path.join(file_path, file_list[row_num]))
                 last_update_time = self.time_format(statinfo.st_mtime)  # 最后修改时间
                 file_size = self.approximateSize(statinfo.st_size)
-                file_info = [file_list[row_num], last_update_time, file_type,file_size]
+                file_info = [file_list[row_num], last_update_time, file_type,file_size,os.path.join(file_path,file_list[row_num])]
 
 
-            for i in range(4):
+            for i in range(5):
                 item = QTableWidgetItem(file_info[i])
                 self.tablewidget.setItem(row_num,i,item)
             self.tablewidget.setRowHeight(row_num,50)
@@ -709,12 +797,13 @@ class Ui_MainWindow(object):
             ''')
         return self.tablewidget
 
-    def tablewidget_right_menu(self,pos):
+    def tablewidget_right_menu(self,pos,file_path=None):
         item_row = self.tablewidget.currentRow()
-        item_column = self.tablewidget.currentColumn()
         file_name = self.tablewidget.item(item_row,0).text()
-        file_path = os.path.join(self.paths[-1],file_name)
-        file_path = file_path.replace('\\','/')
+        file_path = self.tablewidget.item(item_row,4).text()
+        if not file_path:
+            file_path = os.path.join(self.paths[-1],file_name)
+            file_path = file_path.replace('\\','/')
         print(file_path)
         menu = QMenu(self.tablewidget)
         delete = menu.addAction('删除')
@@ -784,7 +873,7 @@ class Ui_MainWindow(object):
                     file_type = 'XLSX表格文件( *.xlsx )'
                     file_image = '../images/excel_status.png'
                 elif file_path.endswith('.png'):
-                    file_type = 'XLSX表格文件( *.xlsx )'
+                    file_type = 'PNG表格文件( *.png )'
                     file_image = '../images/png_status.png'
                 else:
                     file_type = 'Other其他文件类型( *.%s)' % (os.path.splitext(file_path)[1])
@@ -820,9 +909,11 @@ class Ui_MainWindow(object):
 
     def tablewidget_double_clicked(self):
         row = self.tablewidget.currentRow() # 拿到当前行
+        file_path = self.tablewidget.item(row,4).text()
         file_name = self.tablewidget.item(row,0).text()
         print(file_name)
-        file_path = os.path.join(self.paths[-1],file_name).replace('\\','/')
+        if not file_path:
+            file_path = os.path.join(self.paths[-1],file_name).replace('\\','/')
         if os.path.isdir(file_path):
             # 文件夹 执行打开操作
             self.paths.append(file_path)
