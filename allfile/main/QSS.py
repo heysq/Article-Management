@@ -18,6 +18,7 @@ LineEdit = '''
     QLineEdit{
     border:1px solid black;
     border-radius:5px;
+    background:transparent;
     }
 
 '''
@@ -85,12 +86,13 @@ QTabWidget = '''
 QTreeView = '''
     QTreeView {
         font-size:18px;
+        background:transparent;
     }
     QTreeView {
     show-decoration-selected: 1;
     }
     QTreeView::item {
-        border: 1px solid #d9d9d9;
+
         border-top-color: transparent;
         border-bottom-color: transparent;
     }
@@ -113,6 +115,7 @@ QTreeView = '''
 QDoubleSpinBox = '''
     QDoubleSpinBox {
         padding-right: 15px; /* make room for the arrows */
+        background:transparent;
         
     }
     QDoubleSpinBox::up-button {

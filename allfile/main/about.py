@@ -2,65 +2,70 @@
 
 # Form implementation generated from reading ui file 'about.ui'
 #
-# Created by: PyQt5 UI code generator 5.11.3
+# Created by: PyQt5 UI code generator 5.9
 #
 # WARNING! All changes made in this file will be lost!
-import sys
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import QSize
+from PyQt5.QtWidgets import QMainWindow
 
 
-class AboutDialog(QDialog):
-    def __init__(self,parent = None):
-        super(AboutDialog, self).__init__(parent)
-        self.setWindowTitle('关于网络文章管理系统')
-        self.setUi()
+class AboutDialog(object):
+    def setupUi(self, Dialog):
+        Dialog.setObjectName("Dialog")
+        Dialog.resize(412, 235)
+        Dialog.setFixedSize(QSize(412,235))
+        self.layoutWidget = QtWidgets.QWidget(Dialog)
+        self.layoutWidget.setGeometry(QtCore.QRect(20, 40, 374, 152))
+        self.layoutWidget.setObjectName("layoutWidget")
+        self.horizontalLayout = QtWidgets.QHBoxLayout(self.layoutWidget)
+        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout.setSpacing(5)
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.label = QtWidgets.QLabel(self.layoutWidget)
+        self.label.setText("")
+        self.label.setPixmap(QtGui.QPixmap("../images/software.png"))
+        self.label.setObjectName("label")
+        self.horizontalLayout.addWidget(self.label)
+        self.verticalLayout = QtWidgets.QVBoxLayout()
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label_2 = QtWidgets.QLabel(self.layoutWidget)
+        self.label_2.setMinimumSize(QtCore.QSize(200, 30))
+        self.label_2.setMaximumSize(QtCore.QSize(200, 30))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setBold(True)
+        font.setWeight(75)
+        self.label_2.setFont(font)
+        self.label_2.setObjectName("label_2")
+        self.verticalLayout.addWidget(self.label_2)
+        self.label_3 = QtWidgets.QLabel(self.layoutWidget)
+        self.label_3.setMinimumSize(QtCore.QSize(200, 30))
+        self.label_3.setMaximumSize(QtCore.QSize(200, 30))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setPointSize(10)
+        font.setBold(True)
+        font.setWeight(75)
+        self.label_3.setFont(font)
+        self.label_3.setWordWrap(True)
+        self.label_3.setObjectName("label_3")
+        self.verticalLayout.addWidget(self.label_3)
+        self.horizontalLayout.addLayout(self.verticalLayout)
 
-    def setUi(self):
+        self.retranslateUi(Dialog)
+        QtCore.QMetaObject.connectSlotsByName(Dialog)
 
-        # 软降窗口固定大小
-        self.setFixedSize(500,300)
-
-        # 软件图片
-        self.label1 = QLabel()
-
-        self.label1.setText('软件商标')
-        qPixmap = QPixmap('../images/software.png')
-        self.label1.setPixmap(qPixmap)
-        self.label1.resize(256,256)
-        self.label1.setScaledContents(True)
-
-        # 软件作者
-        self.author_label = QLabel()
-        self.author_label.setText('开发人员：孙琦')
-        self.author_label.setGeometry(280, 70, 200, 200)
-        self.author_label.resize(150, 100)
-
-        # 联系方式
-        self.tel_label = QLabel()
-        self.tel_label.setText('邮箱：15735657423@163.com')
-        self.tel_label.setGeometry(280, 90, 200, 200, )
-        self.tel_label.resize(210, 100)
-
-        total_layout = QHBoxLayout()
-        left_layout = QVBoxLayout()
-        right_layout = QVBoxLayout()
-
-
-        left_layout.addWidget(self.label1)
-
-        right_layout.addWidget(self.author_label)
-        right_layout.addWidget(self.tel_label)
-
-
-        total_layout.addLayout(left_layout)
-        total_layout.addLayout(right_layout)
-
-        self.setLayout(total_layout)
+    def retranslateUi(self, Dialog):
+        _translate = QtCore.QCoreApplication.translate
+        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        self.label_2.setText(_translate("Dialog", "Tony Sun"))
+        self.label_3.setText(_translate("Dialog", "15735657489@163.com"))
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    win = AboutDialog()
-    win.show()
-    sys.exit(app.exec_())
+    about = AboutDialog()
+    mainwindow = QMainWindow()
+    about.setupUi(mainwindow)
+    mainwindow.show()
+

@@ -11,7 +11,8 @@ import sys
 import base64
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QInputDialog
+from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QInputDialog, QFrame
 from urllib.parse import unquote
 
 from save_thread import SavePageUrlThread
@@ -29,6 +30,10 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(492, 480)
+        MainWindow.setFixedSize(QSize(492,450))
+        MainWindow.setStyleSheet('''
+                background-color:qlineargradient(spread:pad, x1:1, y1:1, x2:0, y2:0, stop:0 rgba(255, 255, 255, 255), stop:1 rgba(204, 255, 255, 255))
+        ''')
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.widget = QtWidgets.QWidget(self.centralwidget)
@@ -68,7 +73,6 @@ class Ui_MainWindow(object):
         self.lineEdit.setObjectName("lineEdit")
         self.gridLayout.addWidget(self.lineEdit, 2, 1, 1, 2)
         MainWindow.setCentralWidget(self.centralwidget)
-
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
@@ -81,6 +85,7 @@ class Ui_MainWindow(object):
             self.comboBox.setItemText(index, _translate("MainWindow", type))
         self.label_3.setText(_translate("MainWindow", "文件名:"))
         self.pushButton.setText(_translate("MainWindow", "新建分类"))
+
         self.label_2.setText(_translate("MainWindow", "网页URL:"))
         self.pushButton_2.setText(_translate("MainWindow", "保存网页"))
         try:
@@ -102,6 +107,94 @@ class Ui_MainWindow(object):
         self.textBrowser.setHtml(_translate("MainWindow", self.save_url))
         self.lineEdit.setText(self.url_title)
         self.label.setText(_translate("MainWindow", "网页分类"))
+        self.label.setFrameShape(QFrame.NoFrame)
+        self.label_2.setFrameShape(QFrame.NoFrame)
+        self.label_3.setFrameShape(QFrame.NoFrame)
+        self.textBrowser.setFrameShape(QFrame.NoFrame)
+        self.label.setStyleSheet('''
+            QLabel {
+                font-size: 18px;
+                background:transparent;
+            }
+        ''')
+        self.pushButton.setStyleSheet('''
+                    QPushButton{
+                    border:1px solid black;
+                    padding:5px;
+                    font-size:18px;
+                    border-radius:5px;}
+                    QPushButton:hover{
+                    background:transparent;
+                    }
+
+                ''')
+        self.pushButton_2.setStyleSheet('''
+                    QPushButton{
+                    border:1px solid black;
+                    padding:5px;
+                    font-size:18px;
+                    border-radius:5px;
+                    background:transparent;
+                    }
+                    
+                    QPushButton:hover{
+                    background-color:#66ccff;
+                    }
+                ''')
+        self.comboBox.setStyleSheet('''
+                    QComboBox{
+                        font-size: 20px;
+                        border-radius: 5px;
+                        padding:5px;
+                        border: 1px solid gray;
+                        background:transparent;
+                    }
+                    QComboBox::drop-down {
+                        subcontrol-origin: padding;
+                        subcontrol-position: top right;
+                        width: 20px;
+                        border-left:1px solid gray;
+                        border-top-right-radius: 3px; /* same radius as the QComboBox */
+                        border-bottom-right-radius: 3px;
+                    }
+                    QComboBox::down-arrow {
+                        image: url(../images/drop_down.png);
+                    }
+
+                ''')
+        self.label_3.setStyleSheet('''
+            QLabel {
+                font-size: 18px;
+                background:transparent;
+            }
+        
+        ''')
+        self.lineEdit.setStyleSheet('''
+            QLineEdit {
+                border: 1px solid black;
+                border-radius:4px;
+                font-size:18px;
+                padding:5px;
+                background:transparent;
+            }
+        ''')
+        self.label_2.setStyleSheet('''
+            QLabel {
+            font-size:18px;
+            background:transparent;
+            }
+        ''')
+        self.textBrowser.setStyleSheet('''
+            QTextBrowser {
+            border: 1px solid gray;
+            border-radius:4px;
+            padding:5px;
+            font-size:18px;
+            /* background-color:rgba(255,255,255,0) */
+            background:transparent;
+            }
+        
+        ''')
         self.pushButton.clicked.connect(self.new_type)
         self.pushButton_2.clicked.connect(self.save_page)
 
