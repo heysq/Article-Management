@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-
-# Form implementation generated from reading ui file 'saveWindow_demo.ui'
-#
-# Created by: PyQt5 UI code generator 5.9
-#
-# WARNING! All changes made in this file will be lost!
 import json
 import os
 import sys
@@ -222,6 +215,8 @@ class Ui_MainWindow(object):
     def save_page_result(self, msg):
         print(msg)
         self.save_thread.wait()
+        QMessageBox.information(self.mainwindow,'提示','保存成功，请打开主程序查看内容！',QMessageBox.Ok)
+        self.mainwindow.close()
 
 
 if __name__ == '__main__':

@@ -1,6 +1,4 @@
-from PyQt5.QtCore import Qt
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtWidgets import QApplication
 
 
 class Browser(QWebEngineView):
@@ -10,11 +8,6 @@ class Browser(QWebEngineView):
         super().__init__(parent=parent)
         self.setZoomFactor(1.25)
         # print(self.zoomFactor())
-
-
-
-
-
 
 
 if __name__ == '__main__':

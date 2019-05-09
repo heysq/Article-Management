@@ -10,6 +10,7 @@ from PIL import Image
 from PyQt5.QtCore import *
 from selenium import webdriver
 from bs4 import BeautifulSoup
+from TextExtractor import CxExtractor
 
 
 class SavePageUrlThread(QThread):
@@ -38,7 +39,6 @@ class SavePageUrlThread(QThread):
             os.mkdir(os.path.join(file_dir, 'image'))
             os.mkdir(os.path.join(file_dir, 'link'))
             os.mkdir(os.path.join(file_dir, 'text'))
-            os.mkdir(os.path.join(file_dir, 'vedio'))
             os.mkdir(os.path.join(file_dir, 'screenshots'))
             self.file_abs_name = os.path.join(file_dir, self.filename + '.html')
 
@@ -52,7 +52,7 @@ class SavePageUrlThread(QThread):
         screen_path = os.path.join(self.fileLoacation, self.saveType, self.filename, 'screenshots')  # 截图保存路径
         screen_dict = {}  # 存放每个屏幕截图的列表，用于合成页面长途
 
-        print(js_height,height)
+        # print(js_height,height)
         if js_height % height == 0:
             screen_num = js_height // height
         else:
@@ -64,7 +64,7 @@ class SavePageUrlThread(QThread):
             self.bro.get_screenshot_as_file(filename)
             screen_dict[str(i)] = Image.open(filename)
 
-        '''网页小姐图合并为长图'''
+        '''网页小截图合并为长图'''
         img_width,img_height = screen_dict['0'].size
         result = Image.new(screen_dict['0'].mode,(img_width,len(screen_dict)*img_height))
         for i in range(0,len(screen_dict)):
@@ -309,11 +309,15 @@ class SavePageUrlThread(QThread):
                 pass
 
         '''提取文字功能'''
+        cx = CxExtractor(threshold=186)
 
+        content = cx.filter_tags(page_source)
+        s = cx.getText(content)
+        text_name = os.path.join(self.fileLoacation,self.saveType,self.filename,'text',self.filename+'.txt')
+        f = open(text_name,'w',encoding='utf-8')
+        f.write(s)
+        f.close()
 
-        # p_list = soup.find_all('p')
-        # for index,p in enumerate(p_list):
-        #     print(p.string)
 
         '''html文件写入操作'''
         html_file = open(self.file_abs_name, 'wb')
