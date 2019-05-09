@@ -236,16 +236,69 @@ class Ui_MainWindow(object):
 
         '''右侧文件预览'''
         self.tab_4 = QtWidgets.QWidget()
+        self.tab_4.setStyleSheet('''
+            background:transparent;
+        ''')
         self.tab_4.setObjectName("tab_4")
         self.tabWidget.addTab(self.tab_4, "文件预览")
         self.browser = Browser(self.tab_4)
+        self.browser.setStyleSheet('''
+                background:transparent;
+        ''')
         self.zoom_in_button.clicked.connect(self.zoom_in_func)  # 放大与缩小按钮出发事件设置
         self.zoom_out_button.clicked.connect(self.zoom_out_func)
         self.sp.setValue(self.browser.zoomFactor())
         self.tab_layout = QVBoxLayout(self.tab_4)
         self.browser.setMinimumSize(QSize(400, 200))
         self.tab_layout.addWidget(self.browser)
-        self.browser.load(QUrl('D:/graduation-project/allfile/UI_HTML/welcome.html'))
+        self.browser.setHtml('''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style type="text/css">
+                    * {
+                        padding: 0;
+                        margin: 0;
+                    }
+            
+                    div {
+                        padding: 4px 48px;
+                    }
+            
+                    body {
+                        background: #fff;
+                        font-family: "微软雅黑";
+                        color: #333;
+                    }
+            
+                    h1 {
+                        font-size: 100px;
+                        font-weight: normal;
+                        margin-bottom: 12px;
+                    }
+            
+                    p {
+                        line-height: 1.8em;
+                        font-size: 36px
+                    }
+                </style>
+            </head>
+            <div style="padding: 24px 48px;">
+                <h1>:)</h1>
+                <p><b>欢迎使用！</b></p>
+                <br>
+                <hr>
+                <br>
+                <ul>
+                    <li><b>图片 JPG格式</b></li>
+                    <li><b>网页文件 HTML格式</b></li>
+                    <li><b>记事本 TXT格式</b></l>
+                </ul>
+            </div>
+            
+            </html>
+        ''')
         self.tabWidget.setCurrentIndex(1)
 
         self.horizontalLayout.addWidget(self.splitter)
@@ -350,7 +403,7 @@ class Ui_MainWindow(object):
             # print(self.search_res)
             self.tablewidget.clear()
             self.tablewidget.setHorizontalHeaderLabels(['文件名','最后修改日期','文件类型','大小','位置'])
-            self.tablewidget.setColumnHidden(4,False)
+            # self.tablewidget.setColumnHidden(4,False)
             if not self.search_res: #搜索结果为空
                 item = QTableWidgetItem('什么都没有搜索到！')
                 self.table_widget.setItem(0,0,item)
@@ -423,10 +476,13 @@ class Ui_MainWindow(object):
         self.treeWidget_2.setContextMenuPolicy(Qt.CustomContextMenu)
         self.treeWidget_2.customContextMenuRequested.connect(self.fileTreeCustomRightMenu)
 
+
     def fileItemDoubleClick(self):
+        '''文件树双击事件'''
+
         item = self.treeWidget_2.currentItem()
         file_path = item.text(1)
-        # file_path = file_path.replace('\\', '/')
+        file_path = file_path.replace('\\', '/')
         # print(file_path)
         if os.path.isdir(file_path):
             self.paths.append(file_path)
@@ -441,10 +497,10 @@ class Ui_MainWindow(object):
                 file_url = file_path.replace('\\', '/')
                 self.browser.stop()
                 self.browser.destroy()
-                self.browser.close()
-                del self.browser
-                self.browser = Browser()
-                self.tab_layout.addWidget(self.browser)
+                # self.browser.close()
+                # del self.browser
+                # self.browser = Browser()
+                # self.tab_layout.addWidget(self.browser)
                 self.browser.load(QUrl('file:///' + file_url))
                 self.zoom_in_button.clicked.connect(self.zoom_in_func)  # 放大与缩小按钮出发事件设置
                 self.zoom_out_button.clicked.connect(self.zoom_out_func)
@@ -461,9 +517,9 @@ class Ui_MainWindow(object):
                 if reply == 16384:
                     os.startfile(file_path)
 
-    '''文件树右键菜单'''
-
     def fileTreeCustomRightMenu(self, pos):
+        '''文件树右键菜单'''
+
         item = self.treeWidget_2.currentItem()
         file_path = item.text(1)
         menu = QMenu(self.treeWidget_2)
@@ -609,12 +665,16 @@ class Ui_MainWindow(object):
         self.file_thread.sinOut.connect(self.getTreeRoot)
 
     def getdirsize(self, dir_path):
+        '''获取文件夹大小方法'''
+
         size = 0
         for root, dirs, files in os.walk(dir_path):
             size += sum([getsize(join(root, name)) for name in files])
         return size
 
     def time_format(self, timestamp):
+        '''时间格式化方法'''
+
         time_array = time.localtime(timestamp)
         week = {
             '0': '星期日',
@@ -694,7 +754,7 @@ class Ui_MainWindow(object):
             self.tablewidget.horizontalHeader().setStretchLastSection(True)# 所有列自动拉伸，充满界面
             self.tablewidget.setRowCount(rows)
             self.tablewidget.setColumnCount(5)
-            self.tablewidget.setColumnHidden(4,True)
+            # self.tablewidget.setColumnHidden(4,True)
 
             self.tablewidget.setSelectionBehavior(QAbstractItemView.SelectRows)
             self.tablewidget.verticalHeader().setVisible(False)
@@ -729,8 +789,10 @@ class Ui_MainWindow(object):
             if os.path.isdir(os.path.join(file_path,file_list[row_num])):
                 file_type = '文件夹'
                 statinfo = os.stat(os.path.join(file_path, file_list[row_num]))
+                file_pos = file_path
+                file_size = self.approximateSize(self.getdirsize(os.path.join(file_path,file_list[row_num])))
                 last_update_time = self.time_format(statinfo.st_mtime)  # 最后修改时间
-                file_info = [file_list[row_num],last_update_time,file_type,'',os.path.join(file_path,file_list[row_num])]
+                file_info = [file_list[row_num],last_update_time,file_type,file_size,file_pos]
             else:
                 if file_list[row_num].endswith('.jpg'):
                     file_type = 'JPG图片文件( *.jpg )'
@@ -753,7 +815,7 @@ class Ui_MainWindow(object):
                 statinfo = os.stat(os.path.join(file_path, file_list[row_num]))
                 last_update_time = self.time_format(statinfo.st_mtime)  # 最后修改时间
                 file_size = self.approximateSize(statinfo.st_size)
-                file_info = [file_list[row_num], last_update_time, file_type,file_size,os.path.join(file_path,file_list[row_num])]
+                file_info = [file_list[row_num], last_update_time, file_type,file_size,file_path]
 
 
             for i in range(5):
@@ -761,6 +823,9 @@ class Ui_MainWindow(object):
                 self.tablewidget.setItem(row_num,i,item)
             self.tablewidget.setRowHeight(row_num,50)
             self.tablewidget.setStyleSheet('''
+                    QTableWidget {
+                    background:transparent;
+                    }
                     QTableWidget::item {
                         padding: 10px;
                         border: 0px solid red;
@@ -770,7 +835,6 @@ class Ui_MainWindow(object):
                         color: black;
                         background-color: rgb(102,204,204);
                         }
-
 
             ''')
         return self.tablewidget
@@ -886,41 +950,37 @@ class Ui_MainWindow(object):
             self.status_main_window.show()
 
     def tablewidget_double_clicked(self):
-        row = self.tablewidget.currentRow() # 拿到当前行
-        # print(row)
-        file_path = self.tablewidget.item(row,4).text()
-        file_name = self.tablewidget.item(row,0).text()
-        # print(file_name)
-        # print(file_path)
-        if not file_path:
-            file_path = os.path.join(self.paths[-1],file_name).replace('\\','/')
-        if os.path.isdir(file_path):
-            # 文件夹 执行打开操作
-            self.paths.append(file_path)
-            # self.tab3_layout.removeWidget(self.tablewidget)
-            self.tablewidget.clear()
-            # del self.tablewidget
-            self.get_file_list(self.paths[-1],self.tablewidget)
-            # self.tab3_layout.addWidget(self.tablewidget)
+        '''文件管理列表双击事件'''
 
+        row = self.tablewidget.currentRow() # 拿到当前行
+        file_path = self.tablewidget.item(row,4).text() # 文件上级路径
+        file_name = self.tablewidget.item(row,0).text()  # 文件名
+        file_full_name = os.path.join(file_path,file_name) # 文件绝对路径
+        if os.path.isdir(file_full_name):
+            '''文件夹执行双击打操作'''
+            self.paths.append(file_path) # 打开文件夹 记录上级
+            self.tablewidget.clear()
+            self.get_file_list(file_full_name,self.tablewidget)
         else:
-            # 不是文件夹  判断文件类型，执行预览操作
-            if file_path.endswith('jpg') or file_path.endswith('.png') or file_path.endswith('html') or file_path.endswith('pdf'):
-                file_path = file_path.replace('\\', '/')
+            '''文件打开操作'''
+            if file_full_name.endswith('jpg') or file_full_name.endswith('.png') or file_full_name.endswith(
+                    'html') or file_full_name.endswith('pdf'):
+                file_path = file_full_name.replace('\\', '/')
+                print(file_path)
                 self.browser.stop()
-                self.browser.destroy()
-                self.browser.close()
-                del self.browser
-                self.browser = Browser()
-                self.tab_layout.addWidget(self.browser)
+                # self.browser.destroy()
+                # self.browser.close()
+                # del self.browser
+                # self.browser = Browser()
+                # self.tab_layout.addWidget(self.browser)
                 self.browser.load(QUrl('file:///' + file_path))
                 self.zoom_in_button.clicked.connect(self.zoom_in_func)  # 放大与缩小按钮出发事件设置
                 self.zoom_out_button.clicked.connect(self.zoom_out_func)
                 self.sp.setValue(self.browser.zoomFactor())
                 filename = file_path.split('/')[-1]
                 self.tabWidget.setCurrentIndex(1)
-                self.statusBar.showMessage(f'预览文件 -> {filename} , 请等候...')
-                self.browser.loadFinished.connect(self.browser_finished)
+                self.statusBar.showMessage(f'预览文件 -> {filename} ...')
+                # self.browser.loadFinished.connect(self.browser_finished)
             else:
                 reply = QMessageBox.information(self.mainwindow,
                                                 "调用系统软件",
@@ -928,6 +988,7 @@ class Ui_MainWindow(object):
                                                 QMessageBox.Yes | QMessageBox.No)
                 if reply == 16384:
                     os.startfile(file_path)
+
 
     def file_back(self):
         # print(self.paths)
