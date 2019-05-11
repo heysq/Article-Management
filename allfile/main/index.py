@@ -1,4 +1,3 @@
-
 import json
 import os
 import shutil
@@ -10,9 +9,9 @@ from os.path import getsize, join
 from PyQt5 import QtCore,QtWidgets
 from PyQt5.QtCore import QMargins, Qt, QSize, QUrl, QMimeData
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QAction, QDialog, QToolBar, QLineEdit, \
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QAction, QToolBar, QLineEdit, \
     QTreeWidgetItem, QVBoxLayout, QMenu, QPushButton, QDoubleSpinBox, \
-    QHeaderView, QTableWidget, QTableWidgetItem, QAbstractItemView, QFrame
+    QHeaderView, QTableWidget, QTableWidgetItem, QAbstractItemView
 
 from env_dialog import EnvDialog
 from index_thread import FileListThread, FilePasteThread
@@ -183,7 +182,6 @@ class Ui_MainWindow(object):
         self.toolBar.addWidget(self.back_button)
 
 
-
         '''可调节伸缩区域'''
         self.splitter = QtWidgets.QSplitter(self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
@@ -242,9 +240,6 @@ class Ui_MainWindow(object):
         self.tab_4.setObjectName("tab_4")
         self.tabWidget.addTab(self.tab_4, "文件预览")
         self.browser = Browser(self.tab_4)
-        self.browser.setStyleSheet('''
-                background:transparent;
-        ''')
         self.zoom_in_button.clicked.connect(self.zoom_in_func)  # 放大与缩小按钮出发事件设置
         self.zoom_out_button.clicked.connect(self.zoom_out_func)
         self.sp.setValue(self.browser.zoomFactor())
@@ -299,6 +294,7 @@ class Ui_MainWindow(object):
             
             </html>
         ''')
+        self.browser.show()
         self.tabWidget.setCurrentIndex(1)
 
         self.horizontalLayout.addWidget(self.splitter)
@@ -317,6 +313,8 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
+
+
 
     def openLocalFile(self):
         '''
@@ -389,6 +387,9 @@ class Ui_MainWindow(object):
             size /= multiple
             if size < multiple:
                 return '{0:.1f} {1}'.format(size, suffix)
+
+    def browser_finish(self):
+        self.statusBar.showMessage('加载成功',5000)
 
 
     '''搜索按钮点击事件函数'''
@@ -495,20 +496,23 @@ class Ui_MainWindow(object):
         else:
             if file_path.endswith('.html') or file_path.endswith('.jpg') or file_path.endswith('.png') or file_path.endswith('.txt'):
                 file_url = file_path.replace('\\', '/')
-                self.browser.stop()
-                self.browser.destroy()
-                # self.browser.close()
-                # del self.browser
-                # self.browser = Browser()
-                # self.tab_layout.addWidget(self.browser)
-                self.browser.load(QUrl('file:///' + file_url))
+                if file_path.endswith('.html'):
+                    f = open(file_url,'r',encoding='utf-8')
+                    html = f.read()
+                    self.browser.stop()
+                    self.browser.setHtml(html)
+                else:
+                    self.browser.stop()
+                    # self.browser.load(QUrl('file:///' + file_url))
+                    self.browser.load(QUrl('file:///' + file_url))
+
+                self.browser.show()
                 self.zoom_in_button.clicked.connect(self.zoom_in_func)  # 放大与缩小按钮出发事件设置
                 self.zoom_out_button.clicked.connect(self.zoom_out_func)
                 self.sp.setValue(self.browser.zoomFactor())
                 filename = file_url.split('/')[-1]
                 self.tabWidget.setCurrentIndex(1)
-                self.statusBar.showMessage(f'预览文件 -> {filename} , 请等候...')
-                self.browser.loadFinished.connect(self.browser_finished)
+                self.statusBar.showMessage(f'预览文件 -> {filename} ')
             else:
                 reply = QMessageBox.information(self.mainwindow,
                                                 "调用系统软件",
@@ -516,6 +520,7 @@ class Ui_MainWindow(object):
                                                 QMessageBox.Yes | QMessageBox.No)
                 if reply == 16384:
                     os.startfile(file_path)
+
 
     def fileTreeCustomRightMenu(self, pos):
         '''文件树右键菜单'''
@@ -569,9 +574,6 @@ class Ui_MainWindow(object):
                 self.paste_thread.start()
             except IndexError as e:
                 self.statusBar.showMessage('剪切板为空，不能粘贴')
-
-
-
         elif action == openLocalFile:
             try:
                 local_path = file_path.replace('/', '\\')
@@ -726,13 +728,6 @@ class Ui_MainWindow(object):
     def fileStatusCancel(self):
         self.status_main_window.close()
 
-    def browser_finished(self, ):
-        url = self.browser.url().url()
-        # print(url)
-        if url.startswith('file:///'):
-            url = url[8:]
-        self.statusBar.showMessage(f'预览文件 -> {url} 成功！')
-
     def zoom_in_func(self):
         self.browser.setZoomFactor(self.browser.zoomFactor() + 0.3)
         self.sp.setValue(self.browser.zoomFactor())
@@ -747,7 +742,9 @@ class Ui_MainWindow(object):
 
     def get_file_list(self,file_path,tablewidget=None):
         file_list = os.listdir(file_path)
+        # print(file_list)
         rows = len(file_list)
+        # print(rows)
         if not tablewidget:
             self.tablewidget = QTableWidget()
             self.tablewidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -784,6 +781,7 @@ class Ui_MainWindow(object):
                             background-color: #D1D1D1;
                         }
                     ''')
+        self.tablewidget.setRowCount(rows)
         self.tablewidget.setHorizontalHeaderLabels(['文件名', '最后修改日期', '类型', '大小', '位置'])
         for row_num in range(rows): # 行号
             if os.path.isdir(os.path.join(file_path,file_list[row_num])):
@@ -816,8 +814,7 @@ class Ui_MainWindow(object):
                 last_update_time = self.time_format(statinfo.st_mtime)  # 最后修改时间
                 file_size = self.approximateSize(statinfo.st_size)
                 file_info = [file_list[row_num], last_update_time, file_type,file_size,file_path]
-
-
+                # print(file_info)
             for i in range(5):
                 item = QTableWidgetItem(file_info[i])
                 self.tablewidget.setItem(row_num,i,item)
@@ -966,20 +963,22 @@ class Ui_MainWindow(object):
             if file_full_name.endswith('jpg') or file_full_name.endswith('.png') or file_full_name.endswith(
                     'html') or file_full_name.endswith('pdf'):
                 file_path = file_full_name.replace('\\', '/')
-                print(file_path)
-                self.browser.stop()
-                # self.browser.destroy()
-                # self.browser.close()
-                # del self.browser
-                # self.browser = Browser()
-                # self.tab_layout.addWidget(self.browser)
-                self.browser.load(QUrl('file:///' + file_path))
+                if file_path.endswith('.html'):
+                    self.browser.stop()
+                    f = open(file_path,'r',encoding='utf-8')
+                    html = f.read()
+                    self.browser.setHtml(html)
+                    self.browser.show()
+                else:
+                    self.browser.stop()
+                    self.browser.load(QUrl('file:///' + file_path))
+                    self.browser.show()
                 self.zoom_in_button.clicked.connect(self.zoom_in_func)  # 放大与缩小按钮出发事件设置
                 self.zoom_out_button.clicked.connect(self.zoom_out_func)
                 self.sp.setValue(self.browser.zoomFactor())
                 filename = file_path.split('/')[-1]
                 self.tabWidget.setCurrentIndex(1)
-                self.statusBar.showMessage(f'预览文件 -> {filename} ...')
+                self.statusBar.showMessage(f'预览文件 -> {filename} ')
                 # self.browser.loadFinished.connect(self.browser_finished)
             else:
                 reply = QMessageBox.information(self.mainwindow,
